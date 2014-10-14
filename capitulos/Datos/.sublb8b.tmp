@@ -1,0 +1,48 @@
+\myChapter{Servidor Local}\label{chap:servidor}
+\begin{flushright}{\slshape
+    Call me Ishmael.} \\ \medskip
+    --- {Herman Melville, Moby-Dick; or, The Whale}
+\end{flushright}
+\minitoc\mtcskip
+\vfill
+
+En este capítulo se describe la configuración y prestaciones del servidor de cómputo local relacionado con el proyecto SIPEsCA. Debido a la naturaleza en Tiempo Real del procesado de datos del proyecto y el volumen de datos esperable, consideramos necesario hacer especial mención al servidor de cómputo, ya que tanto el diseño de su configuración como las optimizaciones llevadas a cabo ha cabo en él han supuesto mejoras significativas en el procesado de los datos.
+
+Además, debido a la naturaleza del proyecto, el procesado de los datos ha de hacerse en Tiempo Real, esto es, es necesario un servidor robusto y tolerable a fallos para adquirir los datos de forma constante.
+
+\section{Hardware}
+
+Las características principales del Hardware del servidor de cómputo son:
+
+\begin{description}
+	\item {Procesador} Intel(R) Core(TM) i5-4430 CPU @ 3.00GHz
+	\item {Memoria} 16 GiB DDR3 1333MHz
+	\iten Tarjeta Gráfica NVIDIA GT 630
+	\item {Disco duro 1} Westerm Digital 500GB 
+	\item {Disco duro 2} Westerm Digital 500GB
+\end{description}
+
+Destacar la adquisición de 16GiB de memoria RAM, inversión que permitió mantener en memoria la mayoría de los datos, con la correspondiente mejora en los tiempos de acceso a los mismos. Además, se posibilita la adquisición de otros 16GiB de memoria al quedar dos sockets libres en la placa base.
+
+\subsection{RAID}
+
+En el servidor de computo debíamos de garantizar la seguridad e integridad de los datos, además de intentar mejorar en lo máximo posible las operaciones de E/S, que dada la naturaleza del cómputo que se iba a realizar en él iban a ser las más frecuentes. Es por ello que se decide la adquisición de dos disco duros para establecer un RAID1 entre ellos. 
+
+El RAID 1 crea una copia exacta (o espejo) de los datos en dos o  más disco. Esta configuración premia en rendimiento a la lectura de los datos, incrementando el rendimiento como múltiplo lineal del número de copias. Esto implica que un sistema con un RAID1 constituido con 2 discos duros puede estar leyendo simultáneamente dos datos diferentes en dos discos diferentes, consiguiendo duplicar su rendimiento. Por tanto, el tiempo medio de lectura se reduce, ya que los sectores a buscar pueden dividirse entre los discos, bajando el tiempo de búsqueda y subiendo la tasa de trasferencia, con el único límite de velocidad soportada por la controladora.
+
+En el servidor, se adquirió una placa base con soporte para RAID1 de forma física (no simulada por software) mediante dos controladoras de disco independiente, una para cada disco (spliting o duplexing)-
+
+En las operaciones de escritura, el conjunto RAID1 se comporta como un único disco duro, dato que los datos debes ser escritor en todos los disco que conforman el RAID. Por tanto el rendimiento no mejora. Se consideró esta configuración debido a que se estimó que cada dato era solo escrito una vez (cuando se producía) pero en cambio era requerido de ser leído múltiples veces (en función de los algoritmos de procesamiento que se realizasen). Por tanto, esta configuración que premia la lectura de los datos (frente a la escritura) resultaba la más conveniente.
+
+Además, un sistema RAID1 tiene muchas ventajas a la hora de la adminsitración del sistema. Por ejemplo, en entornos 24/7 como en el que nos encontramos, es posible marcar un disco como ``inactivo'' para la realización de una copia de seguridad de dicho disco, reconstruyéndose el RAID de forma automática al volver a marcar el disco como activo. Esto supone una gran baza a la hora de obtener instantáneas de los datos. Este mismo sistema de ``reconstrucción'' funciona igualmente en caso de fallo físico de uno de los discos, con lo cual se mantiene siempre un respaldo del disco duro, lo cual supone un mecanismo de seguridad adicional.
+
+Por último, se descartó añadir al servidor un disco duro sólido (SSD) que pese a ser la alternativa en el mercado más rápida en los tiempos de acceso para lectura, su degradación con el uso suponía un riesgo que difícilmente se podía abordar, además de un coste por GiB de almacenamiento mucho mayor.
+
+\section{Sistema operativo}
+
+Como sistema operativo se instala Ubuntu Server 12.04.03 LTS con el kernel GNU/Linux 3.5.0-40-generic x86_64.
+
+Se opta por este sistema operativo frente a las alternativas planteadas (Debian, CentOS, Ubuntu 13.10) debido a predilecciones personales y familiaridad con el entorno. 
+
+\vfill
+\cleardoublepage

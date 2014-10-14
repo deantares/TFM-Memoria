@@ -1,0 +1,68 @@
+\myChapter{SiMa: Actualizador Local}\label{chap:servidor}
+\begin{flushright}{\slshape
+    Call me Ishmael.} \\ \medskip
+    --- {Herman Melville, Moby-Dick; or, The Whale}
+\end{flushright}
+\minitoc\mtcskip
+\vfill
+\clearpage
+
+\section{Introducción}
+
+En este capítulo se describe el módulo fundamental del sistema SiMa. Este módulo, tiene la tarea principal de encargarse de la adquisición de los datos de cada nodo, tanto de los dispositivos que han sido capturados como de los pasos (ocurrencias) de dichos dispositivos en cada nodo.
+
+Se trata por tanto de una tarea a ser realizada constantemente por nuestro sistema, por lo que se la considera prioritaria. Se aborda esta tarea desde el punto de vista de 3 tareas dependientes entre si.
+
+\begin{figure}[H]
+\centerline{ \xymatrix@=1cm{*+[F]{Descarga} \ar[r] & *+[F]{Procesado} \ar[r] & *+[F]{Escritura} \ar@(d,d)[ll]}}
+\bigskip{}
+\caption{Tareas del sincronizador local de datos}
+\end{figure}
+
+A su vez, estas tres tareas han de ser realizadas para los 3 aspectos que mantenemos sincronizados: los nodos, los dispositivos y los pasos. Estos datos tienen una dependencia tal y como se muestra en la siguiente figura:
+
+\begin{figure}[H]
+\centerline{ \xymatrix@=1cm{*+[F]{Nodos}  & & *+[F]{Dispositivos} \ar[ll]^-{Depende} & & *+[F]{Pasos} \ar[ll]^-{Depende} \ar@(d,d)[llll]^-{Depende} }}
+\bigskip{}
+\caption{Dependencia entre los datos}
+\end{figure}
+
+Por tanto, para los nodos, dispositivos y pasos han de ser descargados, procesados e insertados los datos correspondientes. Además, es un proceso que se debe de dar constantemente en el tiempo.
+
+\section{Descarga de Datos}
+
+Los datos son adquiridos mediante una petición REST a un servidor externo. Los datos no son públicos, por lo que es necesario emplear unas credenciales de usuario que permiten el acceso a dicha API. Además, los nodos no tienen ``temporalidad'', mientras que los dispositivos y pasos necesitan una temporalidad específica. Esto es, para la descarga de los nodos no es necesario introducir ninguna ventana de tiempo (se descarga la información de todos los nodos en el sistema), mientras que para los dispositivos y los pasos es necesario introducir una ventana temporal, esto es, dos periodos de tiempo que constituyen las fechas umbrales de las que se desea descargar la información.
+
+Por último, los dispositivos y pasos necesitan indicar el nodo del que se desea descargar la información. 
+
+Por tanto, presentaremos dos métodos distintos para la descarga, una empleada para los datos atemporales (los nodos) y otra para los datos dependientes y temporales (los pasos y dispositivos)
+
+\subsection{Descarga de Nodos}
+
+Para la descarga de nodos se utiliza un entorno \texttt{webresource} para procesar la petición. Así la función para la descarga de los nodos es la siguiente:
+
+\begin{lstlisting}[basicstyle={\small\ttfamily},breaklines=true,language=Java,numbers=left,numberstyle={\scriptsize},tabsize=6]
+public <T> T get_Nodos(Class<T> responseType) throws UniformInterfaceException {
+        String[] queryParamNames = new String[]{"user", "pass"};
+        String[] queryParamValues = new String[]{_c.get("sc.USER"), _c.get("sc.PASS")};
+        
+        return webResource.queryParams(getQueryOrFormParams(queryParamNames, queryParamValues)).get(responseType);
+    }
+\end{lstlisting}
+
+\subsection{Paralelizado}
+
+\section{Procesado de los Datos}
+
+	\subsection{Diferentes técnicas de procesado: SPLIT y JSON}
+
+\section{Insercción de los Datos}
+
+	\subsection{Paralelización}
+
+	\subsection{Cacheado de peticiones}
+
+\section{Sincronización del Gestor}
+
+\vfill
+\cleardoublepage

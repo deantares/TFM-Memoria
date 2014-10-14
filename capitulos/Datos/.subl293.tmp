@@ -1,0 +1,47 @@
+\myChapter{SiMa: Actualizador Local}\label{chap:servidor}
+\begin{flushright}{\slshape
+    Call me Ishmael.} \\ \medskip
+    --- {Herman Melville, Moby-Dick; or, The Whale}
+\end{flushright}
+\minitoc\mtcskip
+\vfill
+\clearpage
+
+En este capítulo se describe el módulo fundamental del sistema SiMa. Este módulo, tiene la tarea principal de encargarse de la adquisición de los datos de cada nodo, tanto de los dispositivos que han sido capturados como de los pasos (ocurrencias) de dichos dispositivos en cada nodo.
+
+Se trata por tanto de una tarea a ser realizada constantemente por nuestro sistema, por lo que se la considera prioritaria. Se aborda esta tarea desde el punto de vista de 3 tareas dependientes entre si.
+
+
+
+
+\begin{figure}[H]
+\begin{centering}
+	\xymatrix{*+[F]{Descarga} \ar[r] & *+[F]{Procesado} \ar[r] & *+[F]{Escritura}}
+
+	\xymatrix{*+[F]{Descarga} \ar@/^/[r] & {Procesado}}
+
+	\caption{Tareas del sincronizador local de datos}
+\end{centering}
+\end{figure}
+
+
+\section{Introducción}
+
+
+
+\section{Descarga de Datos}
+
+\section{Procesado de los Datos}
+
+	\subsection{Diferentes técnicas de procesado: SPLIT y JSON}
+
+\section{Insercción de los Datos}
+
+	\subsection{Paralelización}
+
+	\subsection{Cacheado de peticiones}
+
+\section{Sincronización del Gestor}
+
+\vfill
+\cleardoublepage

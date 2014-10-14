@@ -1,0 +1,35 @@
+\myChapter{Desarrollo Web y Móvil}\label{chap:web}
+\begin{flushright}{\slshape
+    Call me Ishmael.} \\ \medskip
+    --- {Herman Melville, Moby-Dick; or, The Whale}
+\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+\section{Servicios Web} 
+
+\subsection{Tablas}
+
+\subsection{Gráficos}
+
+\subsection{Mapas}
+
+\section{Plataformas Web}
+
+\subsection{Página principal: Wordpress}
+
+\subsection{Panel de control}
+
+\subsection{Visor de eventos online}
+
+\subsection{Panel de Administración de Google Fusion Table}
+
+\section{Aplicación Móvil}
+
+\subsection{Optimizaciones}
+
+Hola mundo
+
+\vfill
+\cleardoublepage

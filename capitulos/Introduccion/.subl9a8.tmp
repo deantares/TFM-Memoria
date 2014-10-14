@@ -1,0 +1,147 @@
+\myChapter{Metodolog{\'i}a}\label{chap:metodologia}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+Al estar este Proyecto Fin de Máster enmarcado en un proyecto de una magnitud mucho mayor, han sido muchas las personas (tanto técnicas como investigadoras) involucradas en el proyecto SIPEsCA.
+
+Se recoge en este capítulo la carga de tareas en las que se haya divido el proyecto, haciendo especial distinción de aquellas tareas relacionadas con el desempeño de este Proyecto Fin de Máster.
+
+A continuación se describen los avances de los trabajos, indicando las personas involucradas en dichos trabajos.
+
+\section{P01 - Coordinación, administración y gestión} 
+
+\begin{itemize}
+	\item Continúan las tareas de coordinación y gestión del proyecto, así como las de diseminación y publicación de resultados. 
+	\item Se ha renovado el contrato de la primera persona contratada, que está trabajando en la administración del servidor. 
+	\item También se han subcontratado diversos trabajos a la empresa Ciudad2020.
+	\item Se han gestionado los permisos de colocación de los dispositivos para su colocación en el área metropolitana de Sevilla.
+	\item Se ha ofertado un segundo contrato de personal hasta el final del proyecto.
+	\item Falta por subcontratar los últimos trabajos a la empresa Ciudad2020.
+\end{itemize}
+
+\subsection*{Personas involucradas en el desarrollo del P01}
+Todos los investigadores del equipo, con la colaboración de los técnicos de Cidudad 2020 y el personal de la AOPA.
+
+\section{P02 - Componentes hardware}
+
+\begin{itemize}
+	\item Se han estudiado diferentes tecnologías y se han probado varios prototipos para implementar los dispositivos de monitorización.
+	\item Se han configurado varios puntos wifi.
+	\item Se han actualizado los dispositivos a un modelo basado en la plataforma Raspberry-Pi.
+	\item Se han realizado diversos ajustes en las configuraciones para mejorar el funcionamiento.
+	\item Se ha implementado la tecnología basada en tags RFID para su monitorización y la evaluación de esta tecnología.
+\end{itemize}
+
+\subsection*{Personas involucradas en el desarrollo del P02}
+Los técnicos de Cidudad 2020 con la supervisión de PGF, GRL y PACV.
+
+\section{P03 - Sistema de alimentación}
+
+\begin{itemize}
+	\item Se han estudiado las opciones disponibles para alimentar los dispositivos de monitorización. 
+	\item Se ha desarrollado una opción basada en alimentación continua y otra basada en paneles solares y batería.
+	\item Se han instalado ambos tipos de dispositivos (alimentaciones) para evaluarlas y extraer conclusiones.
+\end{itemize}
+
+\subsection*{Personas involucradas en el desarrollo del P03}
+Los técnicos de Cidudad 2020.
+
+\section{P04 - Infraestructura de servicios web e interoperabilidad}
+
+\begin{itemize}
+	\item Se ha diseñado la base de datos (que está en continua actualización). \emph{(*)}
+	\item Se diseñó una primera versión de las consultas a la BD.  \emph{(*)}
+	\item Se realizaron optimizaciones tanto a la BD como a las consultas. \emph{(*)}
+	\item Se realizó la adquisición, instalación y configuración de servidores. \emph{(*)}
+	\item Se realiza el mantenimiento periódico de los servidores. \emph{(*)}
+	\item Se han configurado diversas tablas de BD en Google Fusion Tables para servir la información de forma ágil y asegurando la disponibilidad de la información. \emph{(*)}
+	\item Se ha desarrollado la interfaz de comunicaciones con el servidor de almacenamiento, basada en servicios REST. \emph{(*)}
+	\item Se han desarrollado y configurado los primeros prototipos de servicios web para servir información a los usuarios. \emph{(*)}
+	\item Se ha desarrollado una aplicación móvil para facilitar el acceso a los usuarios a toda la información desde cualquier tipo de dispositivo móvil. \emph{(*)}
+\end{itemize}
+
+\subsection*{Personas involucradas en el desarrollo del P04}
+Los técnicos de Cidudad 2020, AJFA, MGA, PGS, VMRS y PACV.
+
+\section{P05 - Diseño de la inteligencia del negocio}
+
+\begin{itemize}
+	\item Este paquete se ocupa principalmente de la redacción de las especificaciones del sistema. 
+	\item Se ha redactado un documento de estado del arte en predicción de series temporales que sirve de base para las publicaciones científicas.
+	\item Se ha recopilado un conjunto de herramientas disponibles gratuitamente para llevar a cabo tareas de data-mining. \emph{(*)}
+	\item Se han probado varios métodos de predicción y de análisis estadístico para extraer información de los conjuntos de datos. \emph{(*)}
+\end{itemize}
+
+\subsection*{Personas involucradas en el desarrollo del P05}
+AMMG, PGF, GRL, JJMG, JJAM, MGA, PGS, VMRS, AJFA y PACV.
+
+\section{P06 - Integración del sistema y pruebas}
+
+\begin{itemize}
+	\item Se ha desarrollado y configurado una primera versión del servidor (prototipo).
+	\item Se han integrado los algoritmos de procesamiento de datos desarrollados en el mismo.
+	\item El resto de componentes software se han integrado, dando lugar a un prototipo de servidor ya utilizable.
+\end{itemize}
+
+\subsection*{Personas involucradas en el desarrollo del P06}
+Los técnicos de Cidudad 2020.
+
+\section{P07 - Plataforma web}
+
+\begin{itemize}
+	\item Se ha configurado el servidor para gestionar diversos tipos de usuario y servir la información. \emph{(*)}
+	\item Se llevó a cabo la apertura de la web, tanto para monitorizar los dispositivos de captación de datos, como para servir la información a los usuarios. \emph{(*)}
+	\item Se han realizado diversas reuniones (virtuales, telefónicas y presenciales) entre las personas involucradas en ciertas tareas, analizando el sistema de información y requisitos iniciales. \emph{(*)}
+	\item Se ha hecho un diseño del sitio, así como el desarrollo. \emph{(*)}
+\end{itemize}
+
+\subsection*{Personas involucradas en el desarrollo del P07}
+los técnicos de Cidudad 2020 junto con PACV.
+
+\section{P08 - Visualización de datos}
+
+\begin{itemize}
+	\item Las tareas correspondientes a este paquete están en continuo desarrollo. \emph{(*)}
+	\item Se está usando Google Fussion Tables y otras APIs, y ya se sirve información dinámica e interactivamente. \emph{(*)}
+	\item Se han realizado diversas reuniones (virtuales, telefónicas y presenciales) entre las personas involucradas en ciertas tareas para analizar las necesidades de visualización y determinar las necesidades de los usuarios.
+	\item Se ha realizado la maquetación de la información para servirla a los usuarios. \emph{(*)}
+	\item Se han realizado baterías de pruebas con los investigadores, usando diversos tipos de dispositivos, navegadores y sistemas operativos. \emph{(*)}
+\end{itemize} 
+
+\subsection*{Personas involucradas en el desarrollo del P08}
+Los técnicos de Cidudad 2020 junto con AMMF y PACV.
+
+
+\section{P09 - Despliegue y mantenimiento del sistema de información}
+
+\begin{itemize}
+	\item Se han llevado a cabo los estudios de localización, tanto en Córdoba como en Sevilla.
+	\item Se han obtenido los permisos para desplegar los dispositivos en el área metropolitana de Sevilla, en carreteras gestionadas por la Junta de Andalucía. 
+	\item Se han colocado los dispositivos sin necesidad de realizar obra civil.
+	\item Inicialmente se recopilaban datos usando cinco dispositivos. Finalmente se instalaron todos los dispositivos del proyecto y sirven datos continuamente.
+	\item Los sistemas se han desarrollado de forma escalable para que puedan trabajar con un número más alto de nodos en un futuro. 
+	\item Se han elegido tecnologías escalables y fiables que aseguren la disponibilidad del sistema.
+\end{itemize} 
+
+\subsection*{Personas involucradas en el desarrollo del P09}
+Los técnicos de Cidudad 2020 junto con el personal de la AOPA y PACV
+
+
+\section{P10 - Difusión de resultados}
+
+\begin{itemize}
+	\item Continúan las tareas de presencia en los medios de comunicación.
+	\item Continúan las tareas de publicación científica. Hasta la fecha se han publicado 19 publicaciones en congresos y revistas internacionales. \emph{(*)}
+	\item Asesorados por un experto, se ha reestructuró el repositorio en GitHub para liberar los datos y los programas de acuerdo a una licencia de software libre. \emph{(*)}
+\end{itemize} 
+
+\subsection*{Personas involucradas en el desarrollo del P10}
+AJFA, PGS, PACV, JJMG, PGF, JJAM y VMRS.
+
+\vfill
+\cleardoublepage

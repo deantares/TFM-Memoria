@@ -1,0 +1,26 @@
+\myChapter{Appendix: OSGi}\label{chap:appendixosgi}
+\minitoc\mtcskip
+\vfill
+\section{Bluetooh}
+
+En este capítulo se describen los campos que identifican a un dispositivo bluetooth.
+
+Cada dispositivo Bluetooth incorpora en la cabecera de nivel de Banda Base (Baseband 1.1) de sus paquetes un campo Class of Device/Service. Este campo se compone de 3 octetos organizados con el siguiente formato (en little endian):
+
+\begin{itemize}
+\item 11 últimos bits reservados para ServiceClasses
+\item 11 siguientes bits reservados para DeviceClasses
+\begin{itemize}
+  \item 6 últimos bits reservados para MajorDeviceClasses
+  \item 5 siguientes bits reservados para MinorDeviceClasses
+\end{itemize}
+\item 2 primeros bits para el campo Format Type, por defecto 0
+\end{itemize}
+
+
+\subsection{Service Class: Clase de servicio}
+
+El campo reservado para las Service Classes permite identificar los servicios soportados por el dispositivo. Este campo se compone de 11 bits, del 13 al 23. Cada servicio Bluetooth está asociado a un bit en concreto, de forma que si un determinado bit del campo está a 1, entonces el dispositivo soporta ese servicio Bluetooth. La correspondencia entre nº de bit y servicio se recoge en la siguiente tabla:
+
+
+

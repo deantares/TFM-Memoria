@@ -1,0 +1,652 @@
+\myChapter{SiMa: Actualizador Local}\label{chap:servidor}
+\begin{flushright}{\slshape
+    Call me Ishmael.} \\ \medskip
+    --- {Herman Melville, Moby-Dick; or, The Whale}
+\end{flushright}
+\minitoc\mtcskip
+\vfill
+\clearpage
+
+\section{Introducción}
+
+En este capítulo se describe el módulo fundamental del sistema SiMa. Este módulo, tiene la tarea principal de encargarse de la adquisición de los datos de cada nodo, tanto de los dispositivos que han sido capturados como de los pasos (ocurrencias) de dichos dispositivos en cada nodo.
+
+Se trata por tanto de una tarea a ser realizada constantemente por nuestro sistema, por lo que se la considera prioritaria. Se aborda esta tarea desde el punto de vista de 3 tareas dependientes entre si.
+
+\begin{figure}[H]
+\centerline{ \xymatrix@=1cm{*+[F]{Descarga} \ar[r] & *+[F]{Procesado} \ar[r] & *+[F]{Escritura} \ar@(d,d)[ll]}}
+\bigskip{}
+\caption{Tareas del sincronizador local de datos}
+\end{figure}
+
+A su vez, estas tres tareas han de ser realizadas para los 3 aspectos que mantenemos sincronizados: los nodos, los dispositivos y los pasos. Estos datos tienen una dependencia tal y como se muestra en la siguiente figura:
+
+\begin{figure}[H]
+\centerline{ \xymatrix@=1cm{*+[F]{Nodos}  & & *+[F]{Dispositivos} \ar[ll]^-{Depende} & & *+[F]{Pasos} \ar[ll]^-{Depende} \ar@(d,d)[llll]^-{Depende} }}
+\bigskip{}
+\caption{Dependencia entre los datos}
+\end{figure}
+
+Por tanto, para los nodos, dispositivos y pasos han de ser descargados, procesados e insertados los datos correspondientes. Además, es un proceso que se debe de dar constantemente en el tiempo.
+
+Como es un proceso complejo, se presentará descompuesto en las distintas partes funcionales, para en el último capítulo presentar todo el funcionamiento del módulo.
+
+\section{Descarga de Datos}
+
+Los datos son adquiridos mediante una petición REST a un servidor externo. Los datos no son públicos, por lo que es necesario emplear unas credenciales de usuario que permiten el acceso a dicha API. Además, los nodos no tienen ``temporalidad'', mientras que los dispositivos y pasos necesitan una temporalidad específica. Esto es, para la descarga de los nodos no es necesario introducir ninguna ventana de tiempo (se descarga la información de todos los nodos en el sistema), mientras que para los dispositivos y los pasos es necesario introducir una ventana temporal, esto es, dos periodos de tiempo que constituyen las fechas umbrales de las que se desea descargar la información.
+
+Por último, los dispositivos y pasos necesitan indicar el nodo del que se desea descargar la información. 
+
+Por tanto, presentaremos dos métodos distintos para la descarga, una empleada para los datos atemporales (los nodos) y otra para los datos dependientes y temporales (los pasos y dispositivos)
+
+\subsection{Descarga de Nodos}
+
+Para la descarga de nodos se utiliza un entorno \texttt{webresource} para procesar la petición. Así la función para la descarga de los nodos es la siguiente:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    /**
+     * Función que descarga los nodos registrados en el sistema
+     *
+     * @param responseType clase en la que se desea recibir la respuesta a la petición web
+     */
+public <T> T get_Nodos(Class<T> responseType) throws UniformInterfaceException {
+        String[] queryParamNames = 
+        	new String[]{"user", "pass"};
+        String[] queryParamValues =
+        	new String[]{_c.get("sc.USER"), _c.get("sc.PASS")};
+        
+        return webResource.queryParams(getQueryOrFormParams(queryParamNames, queryParamValues)).get(responseType);
+    }
+\end{lstlisting}
+\caption{Código: Descarga de nodos}
+\end{figure}
+
+En el siguiente capítulo se hablará de la variable \emph{\texttt{\_c}} y su importancia como entorno de configuración.
+
+\subsection{Descarga de Dispositivos y Pasos}
+
+La descarga de Dispositivos y Pasos es más elaborada, debido a que debe realizarse para cada nodo y se debe proporcionar una ventana de tiempo válida.
+
+Presentamos a continuación el constructor del cliente encargado de la descarga de los dispositivos:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    /**
+     * Constructor por defecto.
+     *
+     * @param start Fecha de comienzo de los datos
+     * @param end Fecha de fin de los datos
+     */
+    public ClienteDispositivos(String start, String end) {
+        queryParamNames =
+        	new String[]{"user", "pass", "start", "end", "inc"};
+
+        queryParamValues =
+        	new String[]{_c.get("sc.USER"), _c.get("sc.PASS"), start, end, "true"};
+
+        com.sun.jersey.api.client.config.ClientConfig config =
+        	new com.sun.jersey.api.client.config.DefaultClientConfig(); // SSL configuration
+        
+        config.getProperties().put(com.sun.jersey.client.urlconnection.HTTPSProperties.PROPERTY_HTTPS_PROPERTIES, new com.sun.jersey.client.urlconnection.HTTPSProperties(getHostnameVerifier(), getSSLContext()));
+        
+        client = Client.create(config);
+
+    }
+\end{lstlisting}
+\caption{Código: Descarga de dispositivos y pasos: constructor}
+\end{figure}
+
+Este código establece los intervalos de tiempo \emph{\texttt{start}} y \emph{\texttt{end}}. Se tratan de variables en formato \texttt{string} porque ya se encuentran convertidas al formato requerido por la API REST.
+
+A continuación se establece el nodo para el que se desea descargar la información asociada mediante la función \emph{\texttt{createWebResource}}. Por confidencialidad se ha ocultado la URL del servidor que aloja la API REST.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    /**
+     * Función que establece los parámetros para la conexión HTTP
+     *
+     * @param node Identificador del nodo para el que se va a realiza la
+     * petición HTTP
+     */
+public void createWebResource(String node) {
+           
+        webResource = client.resource("https://#########################################/"
+                + node + "/dispositivos?user=" + queryParamValues[0]
+                + "&pass=" + queryParamValues[1]
+                + "&start=" + queryParamValues[2]
+                + "&end=" + queryParamValues[3]
+                + "&inc=true");
+
+        insertados = 0;
+    }
+\end{lstlisting}
+\caption{Código: Descarga de dispositivos y pasos: creador del recurso}
+\end{figure}
+
+Ahora sólo es necesario realizar la petición de descarga de los datos mediante la función \emph{\texttt{get\_Dispositivos}}:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    /**
+     * Función que realiza la petición de los disposistivo.
+     *
+     * @param <T>
+     * @param responseType
+     * @return La respuesta de la petición en el caso de que haya sido correcta.
+     * Null en el caso de que se haya producido algún error.
+     */
+public <T> T get_Dispositivos(Class<T> responseType) {
+
+        try {
+            return webResource.get(responseType);
+        } catch (UniformInterfaceException e) {
+
+            if (e.getResponse().toString().endsWith("returned a response status of 204 No Content")) {
+                Logger.getGlobal().log(Level.FINE,"Error 204 descargando. Se omite.");
+            }
+
+            return null;
+        }
+    }
+\end{lstlisting}
+\caption{Código: Descarga de dispositivos y pasos: realizar descarga}
+\end{figure}
+
+\subsection{Paralelizado}
+
+La descarga de los datos es una operación entrada/salida bastante costosa en tiempo, dependiente de la calidad de la conexión y el volumen de los datos. Es por ello que es una sección que invita a ser paralelizada.
+
+Si bien la descarga de los nodos no puede ser paralelizada de ninguna manera (pues se trata de una única petición), no existe problema para realizar la descarga de los dispositivos o pasos de varios nodos al mismo tiempo, o lo que es aquí propuesto, la descarga de los valores mientras se procesan los valores anteriores. Este mecanismo será descrito en profundidad en el último apartado de este capítulo.
+
+\section{Procesado de los Datos}
+
+Una vez se han descargado los datos, se dispone de una cadena de texto formateada en JSON. Dicha cadena de texto ha de ser procesada, para descomponerla en las unidades básicas de información. 
+
+Se propusieron dos métodos para realizar la descomposición. Uno basado en la función \texttt{SPLIT} y otro basado en las clases de procesado de \texttt{JSON} de JAVA.
+
+\clearpage
+	\subsection{Diferentes técnicas de procesado: SPLIT}
+
+	Este método se suponía más rápido, debido a que no es necesario realizar ninguna conversión de \texttt{string} a otro formato. En él se utiliza la función \texttt{split} para ir partiendo el texto en las diversas partes de información, es decir, en las tuplas y campos.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+     /**
+     * Función que procesa mediante SPLIT el resultado de la petición HTTP.
+     *
+     * @param datos
+     * @throws SQLException
+     * @deprecated
+     * @see ClienteDispositivos.procesarDatos(String datos)
+     */
+    public void procesarDatosSlit(String datos) throws SQLException {
+
+        String datosAInsertar = "";
+        
+        String[] result = datos.toString().split("}");
+        
+        for (int x = 0; x < result.length - 1; x++) {
+            
+            String[] result2 = result[x].split(",");
+
+            for (int y = 1; y < result2.length; y++) {
+                String[] result3 = result2[y].split(":");
+                	for (int w=1; w<result3.length; w++){
+                		datosAInsertar += result3[1] + ", ";        
+                }
+            }
+
+            this.InsertarDatosSync(datosAInsertar.substring(0, datosAInsertar.lastIndexOf(",")));
+            
+        }
+        System.out.println("Dispositivos procesados: " + conta);
+
+    }
+\end{lstlisting}
+\caption{Código: Procesado: método SPLIT}
+\end{figure}
+
+\clearpage
+	\subsection{Diferentes técnicas de procesado: JSON}
+
+	Este método hace uso de la clase \texttt{JSONParser} para crear un objeto que es capaz de navegar de forma nativa por la estructura JSON. En principio, el costo de tener que ``construir'' la estructura JSON parecía demasiado elevado.
+
+	\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    /**
+     * Función que procesa mediante JSON el resultado de la petición HTTP.
+     *
+     * @param datos La respuesta de la petición HTTP
+     */
+    public void procesarDatos(String datos) {
+        //Preprocesamos los datos, para darle un nombre al array
+        datos = "{\"dispositivos\":" + datos + "}";
+
+        JSONParser parser = new JSONParser();
+
+        try {
+            JSONObject obj = (JSONObject) parser.parse(datos);
+            JSONArray lista = (JSONArray) obj.get("dispositivos");
+            procesados = lista.size();
+
+            for (int i = 0; i < lista.size(); i++) {
+
+                String a0 = (String) ((JSONObject) lista.get(i)).get("idDispositivo");
+                String a1 = (String) ((JSONObject) lista.get(i)).get("majorDeviceClass");
+                String a2 = (String) ((JSONObject) lista.get(i)).get("minorDeviceClass");
+                String a3 = (String) ((JSONObject) lista.get(i)).get("serviceClass");
+                String a4 = (String) ((JSONObject) lista.get(i)).get("fabricante");
+
+                this.InsertarDatos("\"" + (String) a0 + "\",\"" + a1 + "\",\"" + a2 + "\",\"" + a3 + "\",\"" + a4 + "\"");
+
+            }
+        } catch (Exception e) {
+            Logger.getGlobal().log(Level.WARNING,"Fallo en el procesamiento de los datos",e);
+        }
+    }
+\end{lstlisting}
+\caption{Código: Procesado: método SPLIT}
+\end{figure}
+
+\clearpage
+	\subsection{Diferentes técnicas de procesado: Comparativa}
+
+	Disponiendo de dos métodos de procesamiento de los datos, se realiza un experimento para ver cual de los dos métodos es mucho más eficiente. Se disponen de 4 cadenas de texto de dos tamaños distintos, y se procesan mediante dichos métodos en 3 ocasiones. Nos quedamos con el tiempo promedio de entre todas las mediciones. El resultado de dicho experimento se puede observar en la Figura \ref{fig:comparativametodosprocesado}.
+
+	\begin{SCfigure}[22][tb]
+	\centering
+	\includegraphics[width=20pc]{img/sima_actualizadorlocal/comparativaMetodoProcesado.eps}
+	\caption{Comparativa en tiempos de los distintos métodos de procesado}
+	\label{fig:comparativametodosprocesado}
+	\end{SCfigure}
+
+Se decide por tanto emplear el método que emplea JSON como procesado, pues si bien el tiempo necesario para la conversión es bastante elevado, el tiempo de acceso a los elementos una vez convertido es lo suficientemente ventajoso como para decantarnos por esta opción.
+
+
+\section{Insercción de los Datos}
+
+Para la insercción de los datos se emplea un objeto \texttt{Statement} que instancia la conexión a la base de datos. En la siguiente figura puede observarse el código de inserción para el método SPLIT:
+
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    /**
+     * Función que sincroniza de forma síncrona con la Base de Datos Local.
+     * @param datos Petición a ejecutar en la Base de Datos Local.
+     * @throws SQLException Si existe algún error al procesar la petición en la Base de Datos Local.
+     * @deprecated 
+     */
+    public void InsertarDatosSync(String datos) throws SQLException {
+        try {
+            String[] comas = datos.split(",");
+            if (comas.length < 5) {
+                datos = datos + ", \"null\" ";
+            }
+
+            Statement st = conexion.crearSt();
+
+            st.executeUpdate("INSERT INTO dispositivo (idDispositivo, majordeviceclass, minordeviceclass, serviceclass, fabricante) VALUES (" + datos + " )");
+
+            if ((++insertados) % 100 == 0) {
+                System.err.print("\n+");
+            } else {
+                System.err.print("+");
+            }
+            /*
+             idDispositivo: Cadena tras el hash de la MAC Bluetooth de un dispositivo.
+             majordeviceclass: Cadena con la característica obtenida de la MAC Bluetooth acerca de la procedencia y capacidades del dispositivo.
+             minordeviceclass: Cadena con la característica obtenida de la MAC Bluetooth acerca de la procedencia y capacidades del dispositivo.
+             serviceclass: Cadena con la característica obtenida de la MAC Bluetooth acerca de la procedencia y capacidades del dispositivo.
+             fabricante: Cadena con el nombre del fabricante del dispositivo Bluetooth detectado.
+             */
+        } catch (com.mysql.jdbc.exceptions.MySQLIntegrityConstraintViolationException e) {
+            return;
+        }
+
+    }
+\end{lstlisting}
+\caption{Código: Versión preliminar método de insertado}
+\end{figure}
+
+Sin embargo este código presenta grandes carencias de eficiencia.
+
+	\subsection{Procesamiento de peticiones en lote}
+
+	En entornos en los que se suceden las ejecuciones de múltiples ejecuciones, es recomendable la gestión de las peticiones a la base de datos en lote. Esto es, en lugar de realizar las inserciones de 1 en 1, esperar a haber procesado un numero \texttt{n} de peticiones antes de enviar la solicitud a la base de datos.
+
+	Esto es debido a que el tiempo necesario para el gestor de la base de datos para conseguir el bloqueo exclusivo de la tabla y para posicionar los cabezales es en varios órdenes de magnitud superior la tiempo real de escritura.
+
+	Se realiza por tanto un código que se encarga de procesar las peticiones a la base de datos mediante ``lotes'' de datos.
+
+	\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    /**
+     * Función que añade datos a la cache de peticiones a la base de datos o bien procesa si se ha superado el tamaño del lote
+     * @param datos Datos a procesar
+     */
+    public void InsertarDatos(String datos) {
+        cache = cache + (cache_size != 0 ? "," : "") + " (" + datos + " ) ";
+        cache_size++;
+
+        if (cache_size >= MAX_CACHE_SIZE) {
+            syncDB();
+        }
+    }
+\end{lstlisting}
+\caption{Código: Inserción por lotes }
+\end{figure}
+
+La función \texttt{syncDB} es la encargada de enviar la solicitud a la base de datos.
+
+Realizamos un experimento para encontrar un tamaño de caché adecuado. Para ello insertamos en una base de datos de pruebas un fichero procesado con 25164 tuplas con distintos tamaños de caché. La elección de un tamaño máximo de los lotes apropiado para el volumen de datos a insertar es crucial. Si se elige un tamaño de lote muy pequeño, se corre el riesgo de que el tiempo de apertura sea muy superior al de escritura. Sin embargo, también se corre riesgo por elegir un tamaño de lote demasiado grande, ya que si el tamaño del lote es muy grande, no se irán produciendo inserciones en la base de datos hasta haber procesado un número muy alto de tuplas, con lo cual se está ``perdiendo'' tiempo que se podría aprovechar para insertar.
+
+En la Figura \ref{fig:sizelote} se puede observa la reducción de tiempo significativa gracias al empleo del procesado mediante lotes.
+	
+	\begin{SCfigure}[22][tb]
+	\centering
+	\includegraphics[width=20pc]{img/sima_actualizadorlocal/sizelote.eps}
+	\caption{Comparativa en tiempos de los distintos métodos de procesado}
+	\label{fig:sizelote}
+	\end{SCfigure}
+
+\subsection{Paralelización}
+
+El código de la inserción se ha optimizado de gran manera al realizar el procesamiento por lotes, sin embargo aún puede ser mucho más optimizado. Para ello, haremos uso de mecanismos de paralelización.
+
+De esta forma, no será necesario ``esperar'' a que la petición a la base de datos haya sido completada para seguir procesando los datos descargados.
+
+Para ello, se implementa una clase heredada de \texttt{Thread}:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    /**
+     * Clase encargada de realizar las peticiones SQL a la Base de Datos local de forma paralela.
+     */
+    public class threadSyncDB extends Thread {
+
+        /**
+         * Consulta(s) a realizar en la Base de Datos.
+         */
+        private String query;
+        
+        /**
+         * Identificador de la hebra.
+         */
+        private int id;
+        
+        /**
+         * Variable de conexión con la Base de Datos Local. 
+         */
+        private Conectar c;
+        
+        /**
+         * Variable de control - Indica el número de intentos de procesamiento de la petición.
+         */
+        int intentos = 0;
+        
+        /**
+         * Variable de control - Indica si la petición ha sido procesada ya en la Base de Datos Local.
+         */
+        boolean procesada = false;
+        
+        /**
+         * Variable de auditoría - Indica el número de elementos que han sido insertados en la Base de Datos Local.
+         */
+        int insertados = 0;
+
+        /**
+         * Constructor por defecto de la clase.
+         * @param cache Caché de peticiones a realizar en la Base de Datos Local
+         * @param i  Identificador de la hebra.
+         */
+        public threadSyncDB(String cache, int i) {
+            query = cache;
+            id = i;
+        }
+\end{lstlisting}
+\caption{Código: Clase encargada del procesamiento paralelo de la inserción en la base de datos }
+\end{figure}
+
+Esta clase dispone de dos métodos, el primero de ellos es el que se encarga de forma persistente de realizar la inserción en la base de datos y la finalización de la hebra.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    @Override
+    public void run() {
+      do {
+        try {
+          this.c = new Conectar();
+          Statement st = c.crearSt();
+          insertados = st.executeUpdate("INSERT IGNORE INTO __paso (idNodo, idDispositivo, tfin, tinicio) VALUES" + query + ";");
+          procesada = true;
+          c.cerrar();
+        } catch (SQLException ex) {
+          procesada = false;
+          intentos++;
+          if (intentos > MAX_ERRORES_PARA_NOTIFICACION) {
+            Logger.getGlobal().log(Level.WARNING, "Aviso hebra " + this.getId() + " no ha sincronizado aún con DB. Código " + ex.getErrorCode() + " Se intentará nuevamente en " +(TIME_SLEEP_IN_ERROR * intentos * (int) Math.log(Conectar.current_conections))/1000 +  " segundos (Intentos: " + intentos + ")[Cache:" + cache_size + "][Conexiones: " + Conectar.current_conections + "]"  + "[Hebras: " + l_th.size() + "]");
+          }
+          try {
+            sleep(TIME_SLEEP_IN_ERROR * intentos * (int) Math.log(Conectar.current_conections));
+          } catch (InterruptedException ex1) {
+            Logger.getGlobal().log(Level.SEVERE, "Error durmiendo hebra " + this.getId(), ex1);
+          }
+
+        }  catch (Exception ex) {
+          procesada = false;
+          intentos++;
+          if (intentos > MAX_ERRORES_PARA_NOTIFICACION) {
+            Logger.getGlobal().log(Level.WARNING, "Aviso hebra " + this.getId() + " no ha podido reservar conexión aún a la DB. Se intentará nuevamente en " + ((int) TIME_SLEEP_IN_ERROR * intentos * (int) Math.log(Conectar.current_conections)/1000) + " segundos (Intentos: " + intentos + ")[Cache:" + cache_size + "][Conexiones: " + Conectar.current_conections + "]"  + "[Hebras: " + l_th.size() + "]");
+          }
+          try {
+            sleep((int) TIME_SLEEP_IN_ERROR * intentos * (int) Math.log(Conectar.current_conections));
+          } catch (InterruptedException ex1) {
+            Logger.getGlobal().log(Level.SEVERE, "Error durmiendo hebra " + this.getId(), ex1);
+          }
+
+        }
+
+
+      } while (!procesada);
+
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+      //c.cerrar();
+      conexion.cerrar();
+      super.finalize(); //To change body of generated methods, choose Tools | Templates.
+    }
+\end{lstlisting}
+\caption{Código: Métodos de la clase de inserción paralelo}
+\end{figure}
+
+Caben destacar los mecanismos de persistencia, debido a que al enviarse los lotes de forma paralela, estos tendrán que competir por el recurso de la base de datos.
+
+Por tanto, es posible que no siempre que la hebra quiera acceder a la base de datos pueda hacerlo (pues ya esté el recurso siendo ocupado por otra hebra). Para evitar que las hebras compitan constantemente por el recurso, si una hebra no ha podido acceder al recurso, se dormirá un tiempo que será directamente proporcional al número de intentos y a la cantidad de hebras que estén intentando acceder al recurso.
+
+Con este nuevo mecanismo de paralelismo, las funciones anteriormente mostradas quedan de la siguiente forma:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+  public void InsertarDatos(String datos) {
+    cache = cache + (cache_size != 0 ? "," : "") + " (" + datos + " ) ";
+    cache_size++;
+
+    if (cache_size >= MAX_CACHE_SIZE) {
+      syncDB();
+    }
+  }
+
+  public void syncDB() {
+    if (cache_size != 0) {
+      try {
+        l_th.add(new threadSyncDB(cache, l_th.size()));
+        l_th.get(l_th.size() - 1).start();
+
+      } catch (Exception ex) {
+        Logger.getGlobal().log(Level.SEVERE, "Error creando hebra sincronización con la DB", ex);
+
+      }
+    }
+    cache_size = 0;
+    cache = "";
+  }
+\end{lstlisting}
+\caption{Código: Método de inserción paralelo}
+\end{figure}
+
+Sin embargo, es necesario llevar un control del proceso de todas las hebras que tienen que insertar datos. Es por ello que se implementa otra hebra encargada de gestionarlas a todas. El hecho de hacer esto en una hebra independiente en lugar de hacerlo en el propio cliente, es debido a que de esta forma podemos aprovechar los recursos del cliente una vez hayamos terminado de procesar los datos de un nodo y una ventana temporal con otro nodo. En el siguiente apartado se explicará en detalle este mecanismo.
+
+El código de la clase encargada de controlar el cierre y gestión de las hebras se muestra a continuación:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+  public class threadCierre extends Thread {
+
+    private List<threadSyncDB> l = null;
+
+    public threadCierre(List<threadSyncDB> _l) {
+      this.l = _l;
+    }
+
+    @Override
+    public void run() {
+      int insertados = 0;
+      Logger.getGlobal().log(Level.FINE, "Escritura Pasos en BD: " + l.size() + " peticiones");
+      while (!l.isEmpty()) {
+        try {
+          l.get(0).join();
+          insertados = insertados + l.get(0).insertados;
+          l.remove(0);
+        } catch (InterruptedException ex) {
+          Logger.getGlobal().log(Level.SEVERE, null, ex);
+        }
+
+      }
+      Logger.getGlobal().log(Level.FINE, "Escritura Pasos en DB OK. Dispositivos insertados/procesados/: " + insertados + "/" + procesados);
+
+    }
+    
+            /**
+         * Función que se encarga de matar a la hebra.
+         * @throws Throwable 
+         */
+        @Override
+        protected void finalize() throws Throwable {
+            conexion.cerrar();
+            l.clear();
+            super.finalize();
+        }
+    
+  }
+\end{lstlisting}
+\caption{Código: Clase encargada de la gestión de las hebras de inserción}
+\end{figure}
+
+\section{Cliente Actulizador DB Local}
+
+En los apartados anteriores, hemos mostrado los diversos mecanismos y optimizaciones llevados a cabo en cada una de las tres tareas principales que tiene que desempeñar este sistema. A pesar de que lo hemos anticipando, no se ha indicado aún como interactúan las diversas tareas entre ellas.
+
+Hemos querido dejar este apartado como el último del capítulo, debido a que conociendo las diversas tareas y sus mecanismos de optimización, se hará más fácil comprender como encajan todas las partes del sistema entre si.
+
+Es necesario entender que este módulo debe de ser capaz de gestionar de forma automática a lo largo del tiempo, que debe realizar las mismas tareas constantemente solicitando datos actuales constantemente.
+
+Además, la eficiencia prima por encima de todo. Este sistema es clave para los sistemas superiores del módulo, por tanto la eficiencia en la adquisición de los datos cercana al tiempo real supone disponer de datos más cercanos al instante actual en los otros módulos.
+
+\subsection{Estructura del módulo}
+
+En la siguiente figura se observa el código resumido que se encarga de la ejecución de este módulo.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+ /**
+     * Método principal de la clase.
+     * Ejecuta la actualización de los Nodos, Dispositivos y Pasos en tiempo real.
+     */
+    @Override
+    public void run() {
+        try {
+            tg = Thread.currentThread().getThreadGroup();
+
+            actualizarNodos();
+            actualizaDesdeFecha();
+
+            //Modo automático
+            do {
+              
+              _c.set("data.ultimo", Long.toString(ultimaActualizacion.getTime()));
+              
+              
+                if ((System.currentTimeMillis() - ultimaActualizacion.getTime()) < TIEMPO_ACTUALIZACIONES_MS) {
+                    long tiempo_espera = (long) ((System.currentTimeMillis() - ultimaActualizacion.getTime()) * FACTOR_TIEMPO_ESPERA);
+                    
+                    // ...................... //
+
+                    Thread.sleep(TIEMPO_ACTUALIZACIONES_MS - (System.currentTimeMillis() - ultimaActualizacion.getTime()));
+
+                    conexion = new Conectar();
+                    
+                    actualizarNodos();
+                    actualizaDesdeFecha();
+                } else  {
+                    long tiempo_espera = (long) (-(System.currentTimeMillis() - ultimaActualizacion.getTime()) * -FACTOR_TIEMPO_ESPERA);
+                    
+                    // ...................... //
+                                        
+                    actualizarNodos();
+                    actualizaDesdeFecha();
+
+                }
+                
+                _c.set("data.ultimo", Long.toString(ultimaActualizacion.getTime()));
+                Estadisticas.prime();
+                
+            } while (true);
+
+        } catch (ParseException | InterruptedException | SQLException ex) {
+            Logger.getGlobal().log(Level.SEVERE, null, ex);
+        }
+
+
+    }
+\end{lstlisting}
+\caption{Código: Estructura del módulo}
+\label{code:estructuramodulosincronizadolocal}
+\end{figure}
+
+Se resume por tanto la ejecución de este módulo siguiendo el siguiente proceso:
+
+\begin{figure}[H]
+\centering
+\xymatrix{
+ *+[F-,]\txt{Sincronización Inicial} \ar[rd] & \\
+  & *+[F]\txt{Actualización de Nodos} \ar[d] \\
+  & *+[F]\txt{Actualización desde fecha} \ar[dl] \\
+*+[F-,]\txt{Actualización sincronizada} \ar[rd] & \\
+& *+[F]\txt{Actualización de Nodos} \ar[d] \\
+*+[F]\txt{Espero} \ar@(r,r)@{=>}[uu]  & *+[F]\txt{Actualización desde fecha} \ar[d] \ar[dl] \\
+  *+[F]\txt{Demasiado Rápido} \ar[u] & *+[F]\txt{Demasiado lento} \ar[d] \\
+ & *+[F]\txt{Ajusto tiempos} \ar@(l,l)@{=>}[luuuu]
+}
+
+
+\bigskip{}
+\caption{Ejecución del módulo}
+\end{figure}
+
+Se distinguen por tanto dos mecanismos de sincronización, una sincronización inicial y una sincronización automática. Y dos tipos de actualización, una actualización de Nodos, y otra actualización desde una fecha concreta.
+
+\subsection{Tipos de sincronización}
+
+La existencia de dos tipos de sincronización obedece a la posibilidad del software de fallar. En caso de fallo, es necesario disponer de un método que sea capaz de reconstruirse conservando la integridad de los datos, consiguiendo los datos que es posible que no se hayan conseguido debido a la falla del software.
+
+Por tanto, la primera actualización a realizar se realiza desde una fecha ``segura'' donde el software tenga constancia de que estaba en un estado consistente. Este punto de sincronización se puede observar en la Figura \ref{code:estructuramodulosincronizadolocal} en la línea 16. En el siguiente capítulo, descubriremos que misterios se esconden dentro la variable \emph{\texttt{\_c}}, de momento lo único que necesitamos saber es que almacena el instante de tiempo en el que se va a realizar la siguiente petición.
+
+
+
+\subsection{Gestión de la ventana de tiempos}
+
+\vfill
+\cleardoublepage

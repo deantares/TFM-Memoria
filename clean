@@ -1,0 +1,15 @@
+#!/bin/sh
+
+rm *.mtc*
+rm *.aux
+rm *.bbl
+rm *.blg
+rm *.log
+rm *.brf
+rm *.lof
+rm *.lot
+rm *.maf
+rm *.out
+rm *.toc
+rm *~
+rm *.dvi

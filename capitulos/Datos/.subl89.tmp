@@ -1,0 +1,160 @@
+\myChapter{SiMa: Gesti\'on de la Configuraci\'on}\label{chap:servidor}
+\begin{flushright}{\slshape
+    Call me Ishmael.} \\ \medskip
+    --- {Herman Melville, Moby-Dick; or, The Whale}
+\end{flushright}
+\minitoc\mtcskip
+\vfill
+
+\clearpage
+
+En el anterior capítulo hemos utilizado en varias ocasiones la variable \emph{\texttt{\_c}} sin entrar en más detalles sobre su naturaleza. En este capítulo abordaremos el sistema de configuración del sistema que se hace accesible mediante dicha variable. De esta manera, empleamos la variable \emph{\texttt{\_c}} en todos los módulos para poder acceder a la configuración del sistema.
+
+Para hacer uso del entorno de configuración, sólo es necesario instanciar un objeto de tipo Config en el módulo donde se desee iniciar. Se recomienda hacerlo empleando una variable \texttt{static} para mejorar la eficiencia e integridad del fichero de configuración.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    //Variables de configuración
+    static Config _c = new Config();
+\end{lstlisting}
+\caption{Código: Inicialización del entorno: Configuración}
+\label{cod:iniciacionentornoconfiguracion}
+\end{figure}
+
+\section{Uso de ficheros properties para la configuración}
+
+Java dispone de la clase \texttt{properties} para gestionar ficheros de configuración, la cual resulta muy útil para almacenar todos aquellas constantes que pueden ser empleadas dentro del código. Las \texttt{properties} pueden ser almacenadas o cargadas en un flujo (por ejemplo un fichero) para permitir conservar información entre ejecuciones. Esta clase proporciona un sistema \{clave,valor\} de rápido acceso mediante una tabla hash, así como métodos para la lectura y escritura en fichero \texttt{properties}.
+
+Nuestro módulo de configuración, obedece a dos necesidades distintas. Por un lado, dotar la software de la capacidad de ser modificado sin necesidad de recompilar todo el software. Por otro lado ofrece la capacidad para almacenar el estado consistente del sistema, para en caso de error ser capaz de reconstruirse mantiendo siempre la consistencia e integridad de los datos.
+
+Presentamos por tanto la clase \texttt{config} que codifica nuestro módulo de configuración:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+/**
+ * Clase manejadora de la configuración de la aplicación
+ * Emplea dos archivos Properties de configuración, uno global en el propio JAR (sólo lectura) y uno local en el home del usuario (permite sobreescribir las propiedades)
+ * @author Antonio Fernández Ares (antares.es@gmail.com)
+ */
+public class Config {
+
+    /*
+     * Fichero de propiedades global
+     */
+    public Properties _c_global = new Properties();
+    
+    /*
+     * Ficheros de propiedades local
+     */
+    public Properties _c_local = new Properties();
+
+    /*
+     * Método que carga la configuración de los ficheros properties
+     */
+    private void cargarConfiguracion() {
+        try {
+            _c_global.load(Config.class.getResourceAsStream("config.properties"));
+            File fichero = new File(System.getProperty("user.home") + "/" + _c_global.getProperty("directorio_configuracion") + "/config.properties");
+            _c_local.load(new FileInputStream(fichero));
+        } catch (Exception ex) {
+          Logger.getGlobal().log(Level.SEVERE,"no se ha podido cargar el fichero de Configuración", ex);
+        }
+    }
+
+// ---------------------------------------------------------------------//
+
+    /**
+     * Constructor de la clase
+     * @
+     */
+    public Config() {
+        this.cargarConfiguracion();
+    }
+}
+\end{lstlisting}
+\caption{Código: Clase encarcaga de la gestión de la configuración I}
+\end{figure}
+
+Si observamos el código, podemos observar que se hace uso de dos ficheros \texttt{properties} para la gestión de la configuración. En la siguiente sección veremos el porque de este sistema de doble fichero.
+
+\section{Sistema de doble fichero de configuración}
+
+Cuando se trabaja con un fichero \texttt{properties} este puede estar alojado en dos zonas distintas: o bien como recursos (dentro del JAR) o bien como fichero externo. Ambos métodos tienen sus ventajas e inconvenientes. Si bien ambos son accesibles y modificables por el usuario, en tiempo de ejecución modificar un fichero alojado en disco es más sencillo que modificar un fichero alojado como recurso. A nivel de seguridad, ambos son accesibles y modificables por el usuario, por lo que no existen diferencias en este aspecto.
+
+A nivel de ``localización'' es mucho más sencillo acceder a un recurso (pues sólo se requiere el nombre) frente al acceso a un archivo (que se requiere el nombre y la ruta del archivo).
+
+Nos decantamos por la implementación de un sistema de configuración de doble fichero para poder disponer de dos entornos de configuración:
+
+\begin{itemize}
+\item Global: Un fichero \texttt{properties} alojado dentro del propio JAR con toda la información de configuración. En tiempo de ejecución, tiene sólo permisos de lectura.
+\item Local: Un fichero \texttt{properties} alojado en disco en el directorio del usuario, con permisos de Lectura y Escritura en tiempo de ejecución.
+\end{itemize}
+
+De esta forma, podemos disponer de un doble mecanismo para la gestión de la configuración: un entorno de sólo lectura (con la configuración básica) y otro entorno con permisos de lectura/escritura (para almacenar la el estado consistente de los datos, como se vio en la sección anterior).
+
+A la hora de solicitar un dato, los datos se consideran con la jerarquía mostrada en la Figura \ref{fig:jerarquiabusquedaconfiguracion}. Esta jerarquía es debido a que el entorno local es posible que sea actualizado, por tanto si existe un valor almacenado en él este tiene prioridad frente al valor almacenado el en entorno GLOBAL.
+
+\begin{figure}[H]
+\centerline{
+\xymatrix{
+ *+[F-,]\txt{Fichero Configuración LOCAL} \ar[d]^-{No encontrado} \\ 
+ *+[F-,]\txt{Fichero Configuración GLOBAL}  
+}
+}
+\bigskip{}
+\caption{Configuración: Jerarquía de búsqueda}
+\label{fig:jerarquiabusquedaconfiguracion}
+\end{figure}
+
+Por tanto, al solicitar un valor se debe buscar primero en el fichero \texttt{properties} local. Se presentan a continuación los métodos de \texttt{get} y \texttt{set} del módulo de configuración, encargados de leer un valor respecto su clave y de escribir un valor a una clave determinada, respectivamente.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    /**
+     * Devuelve el valor de una determinada clave
+     * @param key La clave a buscar
+     * @return Busca la clave primero en la configuración local, si no eśtá especificada, en la configuración global, si no existe, se devuelve null
+     */
+    public String get(String key) {
+        if (_c_local.getProperty(key) != null) {
+            return _c_local.getProperty(key);
+        } else {
+            return _c_global.getProperty(key);
+        }
+    }
+
+         /**
+     * Inserta o modifica el valor de una determinada clave en la configuración local
+     * @param key La clave bajo la que se almacenará el valor
+     * @param valor El valor que se asociará a la clave
+     */
+    public void set(String key, String valor) {
+        try {
+            _c_local.setProperty(key, valor);
+            _c_local.store(new FileOutputStream(System.getProperty("user.home") + "/" + _c_global.getProperty("directorio_configuracion") + "/config.properties"), null);
+        } catch (Exception ex) {
+            Logger.getGlobal().log(Level.SEVERE,"No se ha podido cargar el fichero de configuración", ex);
+        }
+
+    }
+\end{lstlisting}
+\caption{Código: Clase encarcaga de la gestión de la configuración II}
+\end{figure}
+
+\subsection{Ficheros properties encriptados}
+
+Durante el diseño del módulo de configuración, se estudio la vulnerabilidad de los ficheros \texttt{properties}, pues al encontrarse en texto plano, eran legibles por el propio usuario, lo cual suponía una brecha de seguridad. Es por ello que se planteó la posibilidad de encriptar el fichero \texttt{properties} de la configuración Global, con el fin de salvaguardar esta información.
+
+Para ello se hace uso de la clase \texttt{Encryptableproperties} para crear y encriptar el fichero \texttt{properties} global. Sin embargo, por comodidad en la fase de desarrollo del proyecto, esta es una funcionalidad que aún no ha sido implementada, a pesar de haber sido diseñado. Se considera una funcionalidad que será implementada en las fase final de desarrollo del proyecto, cuando ya no sea requerido realizar cambios de configuración en el entorno.
+
+\section{Uso de módulo de configuración}
+
+Como hemos visto, para invocar el módulo de configuración sólo es necesario instanciar un objeto (recomendable que se estático) como hemos visto en la Figura \ref{cod:iniciacionentornoconfiguracion}. Una vez instanciado el objeto
+
+
+
+
+
+
+\vfill
+\cleardoublepage

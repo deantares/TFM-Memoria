@@ -1,0 +1,77 @@
+\myChapter{Objetivos}\label{chap:objetivos}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+El objetivo principal del proyecto SIPEsCA en el que se enmarca este proyecto Fin de Máster es conseguir un sistema de información autónomo (desde un punto de vista energético), que sea de bajo coste, de rápida implantación y de alta fiabilidad, tal que informe sobre las condiciones del tráfico en tiempo real, no sólo para las instituciones y organismos encargados de la regulación y control del tráfico, sino también a usuarios particulares (a través de alertas móviles, mediante web, etc.), y que gracias a la recopilación y procesado de datos permita predecir el comportamiento futuro. 
+
+El proyecto Fin de Máster que se defiende en este documento se encarga de la elaboración del sistema encargado del procesamiento de los datos y la publicación de los resultados obtenidos en la Nube. Abarca también los aspectos relacionados con la optimización del acceso a los datos y el desarrollo de los servicios y plataformas web que permiten a los usuarios el acceso a los datos.
+
+Se recogen a continuación los objetivos globales del proyecto, marcando con \textbf{(*)} aquellos que se encuentran directamente relacionados y recogidos en este trabajo fin de máster.
+
+\section{Elementos en desarollo} 
+
+Al comienzo del proyecto SIPEsCA existen diferentes elementos del sistema de información propuesto que ya están en desarrollo:
+
+\begin{itemize}
+	\item Sistema de recopilación de datos de los dispositivos: se han estudiado tres posibilidades: escaneo de dispositivos Bluetooth, dispositivos WiFi e implantación de tags RFID en vehículos. Así, el dispositivo autónomo montará estos dispositivos para la captura de frecuencias a altas velocidades (se utilizarán y configurarán tanto en hardware como en software). Adicionalmente el sistema usa una conexión 3G para enviar los datos obtenidos de los demás sensores al servidor de almacenamiento.
+
+	\item Sistema de alimentación autónomo: Se ha elegido y personalizado una caja para alojar la tecnología que resista todo tipo de condiciones metereológicas y de posibles actos vandálicos y que deberá ser ubicada en los márgenes de las carreteras a monitorizar. Junto con la caja, se está desarrollando un sistema de alimentación autónomo haciendo uso de energías renovables y autónomas como luz solar, pilas, etc.
+
+	\end{itemize}
+
+\section{Elementos hardware}
+
+Los objetivos anteriormente fijados se están desarrollando, desde el punto de vista hardware, mediante:
+
+\begin{itemize}
+\item El desarrollo e implantación de 16 dispositivos autónomos (con capacidad para detectar señales BT y wifi) para la recopilación de la información sobre la movilidad, encargados de enviar la información a los servidores para el posterior procesamiento de la información.
+\item La configuración del sistema montado en un vehículo de transporte para hacer pruebas (equipado con un dispositivo móvil con Bluetooth y Wifi activado, además de un chip de medio/largo alcance para la identificación).
+\item A este conjunto de dispositivos se suman los 6 que tiene el grupo de investigación instalados en Granada.	
+\end{itemize}
+
+\section{Servicios Web y herramientas de información}
+
+Desde el punto de vista de servicios web y herramientas de información, están en desarrollo:
+
+\begin{itemize}
+
+	\item Sistema de procesado de datos para almacenar correctamente todos los datos generados y servirlos a través de un servicio web. \textbf{(*)}
+
+	\item Servicio de información para facilitar toda la información a los usuarios interesados en conocer el estado de las carreteras. \textbf{(*)}
+
+	\item Configuración de los elementos de software necesarios para la predicción mediante mecanismos de inteligencia artificial de los comportamientos futuros de los usuarios del transporte.  \textbf{(*)}
+
+	\item Website con un panel de información que permitirá conocer los principales datos de movilidad en tiempo real a partir de la información recopilada. \textbf{(*)}
+
+	\item Servicio de alertas automatizado y en tiempo real cuando se cumplan una serie de condiciones dadas.  \textbf{(*)}
+
+	\item Servicio web para la consulta y extracción de datos por parte de sistemas de información de terceros en tiempo real del sistema \textbf{(*)}
+
+	\item Servicio de predicción de los flujos de movimiento. \textbf{(*)}
+\end{itemize}
+
+\section{Objetivos del Proyecto Fin de Máster}
+
+Si bien anteriormente se han presentado todos los objetivos del proyecto SIPEsCA en este proyecto se abarcan únicamente los objetivos relacionados con los servicios Web y Herramientas de información.
+
+Si bien el hardware ha sido una pieza de desarrollo vital en este proyecto, al haber sido una pieza no desarrollada por el alumno, no se le realizará mayor mención que en este apartado \footnote{
+Queremos en documento agradecer la labor de la empresa \emph{Ciudad2020} la excelente labor realizada con el hardware del proyecto SIPEsCA.
+}.
+
+Es por tanto en el sistema y métodos presentados en este Proyecto Fin de Máster totalmente independiente del hardware que produce dichos datos. Se presenta así por tanto el sistema SiMa desarrollado para la adquisición, procesamiento y publicación de los datos del proyecto SIPEsCA.
+
+Dicho sistema se encuentra realizado en JAVA para la capa de lógica de aplicación, debido a que es multiplataforma, a la gran cantidad de librerías existentes y a su capacidad de compaginar distintos tipos de metodología como la programación orientada a objetos, eventos y sistemas paralelos.
+
+Si bien algunos autores consideran a JAVA ``lento'' debido al uso de JVM y su proceso de compilación JIT\footnote{Just in time} es necesario reconocer que este método de compilación no es el actualmente utilizado por las máquinas, que realizan la primera compilación de los bytecodes a código máquina. De esta forma, si bien la ``puesta en marcha'' del sistema no sea la solución más eficiente, una vez iniciado el sistema (cosa que sólo se ha realizado un par de veces) el sistema funciona con una eficiencia similar a la de lenguajes de más bajo nivel.
+
+No por nada, JAVA es de los sistemas más empleados en el mundo empresarial para sistemas donde se requiera una alta tolerancia a fallos y entornos 24/7.
+
+Para la capa de representación de datos, optamos por la tecnología Web debido a ser el estándar más común
+
+\vfill
+\cleardoublepage

@@ -1,0 +1,776 @@
+\myChapter{Sima: Actualizador en la Nube con Google Fusion Tables}\label{chap:actualizadorFusionTables}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+
+\vfill
+\minitoc\mtcskip
+
+\clearpage
+
+%\lettrine{E}{n}
+ En este capítulo se describe el módulo \emph{Actualizador Fusion Tables} desarrollado para nuestro sistema SiMa con el fin de poder trabajar de forma nativa con las bases de datos alojadas en Google Fusion Tables. Dicho módulo ha sido comentado con anterioridad a lo largo de este documento, debido a su importancia en otros módulos. Si bien se considera el módulo de \emph{Actualización Local} prioritario, este módulo sería el segundo módulo principal del sistema, pues es el encargado de ``hacer visible'' la información adquirida y procesada.
+
+Partimos de la librería desarrollada por Google para trabajar con su API en el entorno JAVA, ampliándola para hacer el funcionamiento mucho más cómodo y sencillo. Se desarrolla la clase \texttt{ConectarFusionTables} como interfaz para realizar todas las conexiones con Google Fusion Tables.
+
+
+\section{Autorización}
+
+Si bien el acceso de lectura de los datos puede ser público, la escritura y modificación de los datos asociados a un usuario de Google Fusion Tables requiere un mecanismos de autenticación, que identifique a un usuario con permisos de escritura frente a un usuario sin ningún tipo de privilegios.
+
+Google hace uso del popular servicio de autenticación OAuth, que permite la autorización de una API de modo estándar y simple. La gestión del modo de autenticación requiere el almacenaje y envío de credenciales de usuarios, basadas en un sistema de clave pública / privada.
+
+
+=====================[Añadir referencias] =============================
+
+https://developers.google.com/accounts/docs/OAuth2
+
+O para la siguiente otra dirección para ver el empleo y gestión de los permisos en la plataforma Google Fusion Tables:
+
+https://developers.google.com/fusiontables/docs/v1/using\#auth
+
+
+Realizamos la autorización de nuestro módulo con la siguiente función:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+	private Credential authorize() throws Exception {
+		FileInputStream _f = new FileInputStream(DATA_STORE_FILE);
+
+		GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(
+				JSON_FACTORY,
+				new InputStreamReader(_f));
+
+		if (clientSecrets.getDetails().getClientId().startsWith("Enter") || clientSecrets.getDetails().getClientSecret().startsWith("Enter ")) {
+			Logger.getGlobal().log(Level.SEVERE,
+					"Enter Client ID and Secret from https://code.google.com/apis/console/?api=fusiontables "
+					+ "into fusiontables-cmdline-sample/src/main/resources/client_secrets.json");
+			System.exit(1);
+		}
+
+		GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+				httpTransport, JSON_FACTORY, clientSecrets,
+				Collections.singleton(FusiontablesScopes.FUSIONTABLES)).setDataStoreFactory(
+						dataStoreFactory).build();
+		return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize("user");
+	}
+\end{lstlisting}
+\caption{Código: Código para la gestión de credenciales de conexión a Google Fusion Tables }
+\end{figure}
+
+Dicho código hace uso de una constante \texttt{DATA\_STORE\_FILE} que es inicializada en el constructor de la clase para abrir el fichero de credenciales, usando el módulo de configuración presentado en el Capítulo \ref{chap:configuracion}.
+
+\section{Optimización de procesado: Sistema de colas}
+
+La utilización de una API para la subida de datos, como es el caso que nos ocupa, corre el riesgo de sobrepasar la cuota de usuario de la que se disponga. De igual manera que para gestionar las inserciones en la base de datos local, se realiza un sistema de colas para gestionar las subidas.
+
+En este caso, no se implementa como un mecanismo de paralelismo, sino como mecanismo de seriealización. Esto puede resultar curioso, pero es preferible realizar la subida de datos poco a poco con el fin de no sobrepasar la cuota de subida de la API.
+
+Además, de esta forma no saturamos la salida a internet, disponiendo de todo el ancho de banda para una única subida de datos.
+
+Hacemos uso de una lista de estructura de tipo cola para almacenar los datos que son necesario enviar. 
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+	/**
+	 * Variable que almacena la query insert cacheada
+	 */
+	private String insertCache = "";
+	/**
+	 * Variable de caché de la caché (¡Cómo en origen!)
+	 */
+	private static Queue<String> insertCacheLista = new LinkedList<>();
+	/**
+	 * Máximo de INSERTS a almacenar en la cache
+	 */
+	private final int INSERT_MAX_CACHE = _c.getInt("ft.insert_cache_size");
+	/**
+	 * Variable que indica el tamaño actual de la caché de procesamiento de
+	 * inserts
+	 */
+	private int insertCacheContador = 0;
+	/**
+	 * Manejador de colas de peticiones a FusionTables
+	 */
+	private static colasManejadorInsert _colas = new colasManejadorInsert();
+
+\end{lstlisting}
+\caption{Código: Código para la gestión de colas para Fusion Tables I }
+\end{figure}
+
+Necesitamos por tanto un manejador para vaciar la cola de peticiones a medida que se vayan procesando las peticiones. Este manejador se presenta en el siguiente código:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+/**
+ * Clase encargada de manejar las colas de peticiones de insercción a
+ * FusionTable
+ */
+private static class colasManejadorInsert extends Thread {
+	static String pendienteProcesar = null;
+	Boolean vacio = false;
+
+	public colasManejadorInsert() {
+		this.setName("Manejador colas Inserts FT");
+	}
+	@Override
+	public void run() {
+		do {
+			synchronized (insertCacheLista) {
+				Logger.getGlobal().fine("Soy la hebra manejadora de FT " + insertCacheLista.size() + " elementos pendientes");
+				if (insertCacheLista.isEmpty()) {
+					try {
+						insertCacheLista.wait();
+						pendienteProcesar = insertCacheLista.poll();
+					} catch (InterruptedException ex) {
+						Logger.getGlobal().log(Level.SEVERE, null, ex);
+					}
+				} else if (pendienteProcesar == null || "".equals(pendienteProcesar)) {
+					pendienteProcesar = insertCacheLista.poll();
+				}
+			}
+			Logger.getGlobal().fine("Soy la hebra manejadora y voy a procesar " + pendienteProcesar);
+			if (sqlStatic(pendienteProcesar) == null) {
+				try {
+					//Ha fallado la transación, por lo que la tenemos que volvemos a procesar pasados unos segundos
+					sleep(_c.getInt("ft.tiempo_espera_error_ms"));
+				} catch (InterruptedException ex) {
+					Logger.getGlobal().log(Level.SEVERE, null, ex);
+				}
+			} else {
+				//Se ha procesado correctamente
+				pendienteProcesar = null;
+			}
+		} while (true);
+	}
+}
+\end{lstlisting}
+\caption{Código: Código para la gestión de colas para Fusion Tables II}
+\end{figure}
+
+Este controlador se encarga de ir enviando los paquetes de datos pendientes a Google Fusion Tables. Es necesario notar que este mecanismo se emplea solamente para las inserciones de nuevos datos. Las consultas y modificaciones son gestionadas fuera de este entorno, debido a que se las considera más urgente, es decir, requieren una respuesta inmediata para continuar la ejecución.
+
+\section{Métodos desarrollados para trabajar con métodos SQL}
+
+Por defecto, la API de Fusion Table sólo permite enviar un tipo genérico de QUERY. Para facilitar el tratamiento de los datos, se implementan métodos que permitan de forma nativa trabajar con las operaciones más frecuentes en una base de datos: SELECT, INSERT, UPDATE, DELETE.
+
+Salvo las inserciones todas ellas hacen uso del método básico \texttt{SQL} que se presenta a continuación:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=2]
+/** Procesa una petición SQL básica
+ * @param query cadena de texto que indica la petición SQL a realizar
+ * @return El archivo JSON procesado devuelto por la petición */
+private Sqlresponse sql(String query) {
+	if (query == "" || query == null) { return null; }
+	Sqlresponse res = null; 	boolean salir = false;
+	while (!salir) {
+		try {
+			Logger.getGlobal().fine("Procesando:" + query);
+			Sql sql = fusiontables.query().sql(query);
+			res = sql.execute(); salir = true;
+		} catch (Exception ex) {
+			if (ex.getMessage().contains("403") || ex.getMessage().contains("Read timed out")) {
+				try {
+					sleep(_c.getInt("ft.tiempo_espera_error_ms")); 
+				} catch (InterruptedException ex1) {
+				Logger.getGlobal().log(Level.SEVERE, "Error al dormir la hebra de Procesado de subidas a la nube", ex1); }
+				salir = false;
+				Logger.getGlobal().fine("Envío fallido " + ex.getMessage() + " . Demasiado rápido. Se volverá a intentar el envío");
+			} else if (ex.getMessage().contains("503")) {
+				//Hemos excedido la cuota
+				salir = false;
+				Logger.getGlobal().fine("Envío fallido " + ex.getMessage() + " . Cuota excedida. Se volverá a intentar el envío pasados " + _c.getInt("ft.tiempo.esperaSubida.dormir") / 1000 + " segundos.");
+				try {
+					sleep(_c.getInt("ft.tiempo.esperaSubida.dormir"));
+				} catch (InterruptedException ex1) {
+					Logger.getGlobal().log(Level.SEVERE, "Error al dormir la hebra de Procesado de subidas a la nube", ex1); }
+			} else {
+				salir = false;
+				Logger.getGlobal().log(Level.SEVERE, "Envío fallido " + ex.getMessage() + "'" + query + "'", ex); }
+		}
+	}
+	Logger.getGlobal().fine("Procesado correctamente.");
+	return res;
+}
+\end{lstlisting}
+\caption{Código: Métodos para Fusion Table: SQL}
+\end{figure}
+
+\subsection{Métodos de selección: SELECT}
+
+Se han implementado varias operaciones de SELECION obedeciendo a la necesidad de sobrecargar el método en función de los parámetros pasados. Se presenta a continuación los dos métodos de selección:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+	 /**
+	 * Función que realiza una selección de una tabla
+	 *
+	 * @param tabla Identificador de la tabla que se quiere consultar
+	 * @param campos Campos que queremos recuperar
+	 * @param condiciones Condiciones que tiene que cumplir las tuplas para que
+	 * sean devueltas
+	 * @return
+	 */
+	public Sqlresponse select(String tabla, String campos, String condiciones) {
+		return sql("SELECT " + campos + " FROM " + tabla + " WHERE " + condiciones);
+	}
+
+	/**
+	 * Función que realiza una selección de una tabla con condiciones extras
+	 *
+	 * @param tabla Identificador de la tabla que se quiere consultar
+	 * @param campos Campos que queremos recuperar
+	 * @param condiciones Condiciones que tiene que cumplir las tuplas para que
+	 * sean devueltas
+	 * @return
+	 */
+	public Sqlresponse select(String tabla, String campos, String condiciones, String extras) {
+		if (!"".equals(condiciones)) {
+			return sql("SELECT " + campos + " FROM " + tabla + " WHERE " + condiciones + " " + extras);
+		} else {
+			return sql("SELECT " + campos + " FROM " + tabla + " " + extras);
+		}
+	}
+\end{lstlisting}
+\caption{Código: Métodos para Fusion Table: SELECT}
+\end{figure}
+
+\subsection{Métodos de inserción: INSERT}
+
+De igual manera que con la selección, sobrecargamos el método para permitir invocarlo con distintos parámetros. En la siguiente figura se encuentran los métodos sobrecargados.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+	/**
+	 * Sobrecarga del método insert para no indicar que se compruebe que existe
+	 * el elemento. Por defecto, el elemento a insertar se comprueba si existe
+	 * en la base de datos de FUSION TABLES antes de insertarlo
+	 *
+	 * @param tabla identificador de la tabla
+	 * @param campos listado de campos (separads por comas) de la tabla
+	 * @param valores listado de valores (separados por comas) a insertar
+	 * @return La respuesta devuelta por el servidor de Fusion Tables.
+	 */
+	public Sqlresponse insert(String tabla, List<String> campos, List<String> valores) {
+		return insert(tabla, campos, valores, true);
+	}
+
+	/**
+	 * Sobrecarga del método insert para no indicar que se compruebe que existe
+	 * el elemento y para un solo elemento. Por defecto, el elemento a insertar
+	 * se comprueba si existe en la base de datos de FUSION TABLES antes de
+	 * insertarlo
+	 *
+	 * @param tabla identificador de la tabla
+	 * @param campos listado de campos (separads por comas) de la tabla
+	 * @param valores listado de valores (separados por comas) a insertar
+	 * @return La respuesta devuelta por el servidor de Fusion Tables.
+	 */
+	public Sqlresponse insert(String tabla, String campos, String valores) {
+		List<String> c = new ArrayList<>();
+		List<String> v = new ArrayList<>();
+
+		c.add(campos);
+		v.add(valores);
+
+		return insert(tabla, c, v, true);
+	}
+
+	/**
+	 * Sobrecarga del método insert para un solo elemento.
+	 *
+	 * @param tabla identificador de la tabla
+	 * @param campos listado de campos (separads por comas) de la tabla
+	 * @param valores listado de valores (separados por comas) a insertar
+	 * @return La respuesta devuelta por el servidor de Fusion Tables.
+	 */
+	public Sqlresponse insert(String tabla, String campos, String valores, boolean check) {
+		List<String> c = new ArrayList<>();
+		List<String> v = new ArrayList<>();
+
+		c.add(campos);
+		v.add(valores);
+
+		return insert(tabla, c, v, check);
+	}
+\end{lstlisting}
+\caption{Código: Métodos para Fusion Table: INSERT Sobrecarga}
+\end{figure}
+
+La inserción implica la operación más compleja realizable en nuestras bases de datos Fusion Tables. Esto es debido a que al carecer de clave primaria establecida por nosotros, podemos correr el riesgo de subir varias veces la misma tupla. Al carecer de un mecanismo como el \texttt{ON DUPLICATE KEYS UPDATE} que proporciona SQL, antes de realizar una inserción debemos comprobar que la tupla que deseamos insertar no se encuentra ya insertada. Es por ello que se debe realizar una función de selección con toda la tupla (o parte de ella), y comprobar si existe ya almacenada en nuestro sistema.
+
+Debido a la ineficiencia de manera de proceder, (deben de hacerse el doble comunicaciones para insertar cada tupla), se permite no realizar dicha comprobación. Este comportamiento se parametriza con el valor \texttt{check} que se muestra en el código anterior.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=1]
+/**
+ * Función que inserta una nueva tupla en la tabla alojada en FusionTables
+ *
+ * @param tabla identificador de la tabla
+ * @param campos listado de campos (separads por comas) de la tabla
+ * @param valores listado de valores (separados por comas) a insertar
+ * @param check si es necesario realizar comprobación de insercción para en
+ * caso de ocurrencia usar UPDATE
+ * @return La respuesta devuelta por el servidor de Fusion Tables.
+ */
+public Sqlresponse insert(String tabla, List<String> campos, List<String> valores, boolean check) {
+	String peticion;
+	if (check) {
+		peticion = "SELECT ROWID FROM " + tabla + " WHERE ";
+		for (int i = 0; i < campos.size(); i++) {
+			if (i != 0) { peticion = peticion + " AND "; }
+			peticion = peticion + campos.get(i) + "=\'" + valores.get(i) + "\'";
+		}
+		Sqlresponse s = this.sql(peticion);
+
+		if (s.size() == 2) {
+			peticion = "INSERT INTO " + tabla + "(";
+			for (int i = 0; i < campos.size(); i++) {
+				if (i != 0) {
+					peticion = peticion + ",";
+				}
+				peticion = peticion + campos.get(i);
+			}
+			peticion = peticion + ") VALUES (";
+			for (int i = 0; i < valores.size(); i++) {
+				if (i != 0) { peticion = peticion + ","; }
+				peticion = peticion + "\'" + valores.get(i) + "\'";
+			}
+			peticion = peticion + ");";
+			insertCache = insertCache + peticion;
+			insertCacheContador++;
+		} else {
+			return this.update(tabla, campos, valores, s.getRows());
+		}
+	} else {
+		peticion = "INSERT INTO " + tabla + "(";
+		for (int i = 0; i < campos.size(); i++) {
+			if (i != 0) { peticion = peticion + ",";}
+			peticion = peticion + campos.get(i);
+		}
+		peticion = peticion + ") VALUES (";
+		for (int i = 0; i < valores.size(); i++) {
+			if (i != 0) { peticion = peticion + ","; }
+			peticion = peticion + "\'" + valores.get(i) + "\'";
+		}
+		peticion = peticion + ");";
+		insertCache = insertCache + peticion;
+		insertCacheContador++;
+	}
+	sync();
+	return null;
+}
+\end{lstlisting}
+\caption{Código: Métodos para Fusion Table: INSERT}
+\end{figure}
+ 
+ Sin embargo, este método comprueba todas las columnas de la tupla para ver si la tupla se encuentra ya en la base de datos o no. Es por ello que se realiza el siguiente método ampliado para permitir decidir el número de columnas que son empleadas en la comprobación de que la tupla ya se encuentra en el sistema.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=2]
+/** @param para número de campos de la lista valores a utilizar en la
+ * comparación en caso de que check sea verdadero */
+public Sqlresponse insert(String tabla, List<String> campos, List<String> valores, boolean check, int para) {
+	String peticion;
+	if (check) {
+		peticion = "SELECT ROWID ";
+		for (int i = para; i < campos.size(); i++) {
+			peticion = peticion + "," + campos.get(i);
+		}
+		peticion = peticion + " FROM " + tabla + " WHERE ";
+		for (int i = 0; i < para; i++) {
+			if (i != 0) { peticion = peticion + " AND "; }
+			peticion = peticion + campos.get(i) + "=\'" + valores.get(i) + "\'";
+		}
+		Sqlresponse s = this.sql(peticion);
+		if (s.size() == 2) {
+			peticion = "INSERT INTO " + tabla + "(";
+			for (int i = 0; i < campos.size(); i++) {
+				if (i != 0) { peticion = peticion + ","; }
+				peticion = peticion + campos.get(i);
+			}
+			peticion = peticion + ") VALUES (";
+			for (int i = 0; i < valores.size(); i++) {
+				if (i != 0) { peticion = peticion + ","; }
+				peticion = peticion + "\'" + valores.get(i) + "\'";
+			}
+			peticion = peticion + ");";
+			insertCache = insertCache + peticion; insertCacheContador++;
+		} else {
+			boolean cambio = false; int j = 1; String depura = "";
+			for (int i = para; (i < campos.size() && cambio==false); i++) {
+				try{
+				if (!(valores.get(i).equals((String) s.getRows().get(0).get(j)))) {
+					cambio = true;
+					Logger.getGlobal().fine("Son distintos " + depura);
+				}}catch(ClassCastException ex){
+					Object v = s.getRows().get(0).get(j);
+					if (!(valores.get(i).equals(v.toString()))) {
+					cambio = true;
+				}
+				}catch(Exception ex){ cambio = true; }
+				j++; //En 0 está ROWID
+			}
+			if (cambio == true) {
+				return this.update(tabla, campos, valores, s.getRows());
+			} else { return null; }
+		}
+	} else {
+		peticion = "INSERT INTO " + tabla + "(";
+		for (int i = 0; i < campos.size(); i++) {
+			if (i != 0) {peticion = peticion + ",";}
+			peticion = peticion + campos.get(i);
+		}
+		peticion = peticion + ") VALUES (";
+		for (int i = 0; i < valores.size(); i++) {
+			if (i != 0) { peticion = peticion + ","; }
+			peticion = peticion + "\'" + valores.get(i) + "\'";
+		}
+		peticion = peticion + ");";
+		insertCache = insertCache + peticion;
+		insertCacheContador++;
+	}
+	sync();
+	return null;
+}
+\end{lstlisting}
+\caption{Código: Métodos para Fusion Table: INSERT II}
+\end{figure}
+ 
+ \subsection{Métodos de actualización: UPDATE}
+
+ Esta función (que ya se ha mostrado su uso en el método insertar), permite actualizar la información de una tupla concreta. Para ello, se requiere proporcionar el \texttt{ROWID} o identificador de tupla, que puede ser adquirido realizando una selección.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+	/**
+	 * Función que actualiza una tupla en la tabla alojada en FusionTables
+	 *
+	 * @param tabla identificador de la tabla
+	 * @param campos campo que será actualizado
+	 * @param valores valor que será actualizado
+	 * @param ROWID identificador de la tupla
+	 * @return
+	 */
+	public Sqlresponse update(String tabla, List<String> campos, List<String> valores, List<List<Object>> ROWIDs) {
+		for (Object ite : ROWIDs) {
+
+			String peticion = "UPDATE " + tabla + " SET ";
+
+			for (int i = 0; i < campos.size(); i++) {
+				if (i > 0) {
+					peticion = peticion + ",";
+				}
+				peticion = peticion + campos.get(i) + " = \'" + valores.get(i) + "\'";
+			}
+			peticion = peticion + "  WHERE ROWID = " + "\'" + ((String) ((List<String>) ite).get(0)) + "\'; ";
+		   
+			Logger.getGlobal().fine(peticion);
+			this.sql(peticion);
+		}
+		return null;
+	}
+\end{lstlisting}
+\caption{Código: Métodos para Fusion Table: UPDATE}
+\end{figure}
+
+ 
+ \subsection{Métodos de borrado: DELETE}
+
+ Esta función permite borrar una tupla concreta. Para ello, se requiere proporcionar el \texttt{ROWID} o identificador de tupla, que puede ser adquirido realizando una selección.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+	/**
+	 * Función que elimina una tupla en la tabla alojada en FusionTables
+	 *
+	 * @param tabla identificador de la tabla
+	 * @param ROWID identificador de la tupla
+	 * @return
+	 */
+	public Sqlresponse delete(String tabla, List<List<Object>> ROWIDs) {
+		String peticion;
+
+		for (Object ite : ROWIDs) {
+			peticion = "DELETE FROM " + tabla + "\" WHERE ROWID = " + "\'" + ((String) ((List<String>) ite).get(0)) + "\';";
+			this.sql(peticion);
+		}
+
+		return null;
+	}
+\end{lstlisting}
+\caption{Código: Métodos para Fusion Table: DELETE}
+\end{figure}
+
+\section{Sistemas de Actualización}
+
+A lo largo de esta sección hemos presentado los métodos desarrollados para trabajar de forma nativa con operaciones SQL, pero aún no se ha mostrado el uso que hacemos de ellas en nuestro sistema.
+
+En esta sección se muestran las submódulo de cálculo y subida a Fusion Tables de la información relativa a los nodos, los pasos y las trazas.
+
+En los ejemplos que se muestran, se almacenan los valores agrupados por horas haciendo uso de los métodos presentados en el Capítulo \ref{sub:sec:procedimientosSQL}.
+
+\subsection{Actualización de Nodos}
+
+Este subsistema se encarga de actualizar la información relativa a los nodos en una tabla de Google Fusion Tables. Para ello hace uso del método que presentamos a continuación:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+  public boolean calcular() {
+	Conectar conectar = new Conectar();
+	try {
+	  Statement st = conectar.crearSt();
+	  rs = st.executeQuery("select * from nodo");
+
+	  List<String> valores = new ArrayList<>();
+
+	  while (rs.next()) {
+		valores.add(rs.getString(1)); //idNodo
+		valores.add(rs.getString(2)); //latitud
+		valores.add(rs.getString(3)); //longitud
+		valores.add(rs.getString(4)); //nombre
+		valores.add(rs.getString(5)); //poligono
+		
+		if(rs.getString("nombre").toLowerCase().contains("wifi")){
+		  valores.add("Wifi");
+		}else if(rs.getString("nombre").toLowerCase().contains("wi-fi")){
+		  valores.add("Wifi");
+		}else{
+		  valores.add("Bluetooth");
+		}
+		Logger.getGlobal().fine("Insertando valores del nodo"+valores.toString());
+		cFT.insert(TABLAID, campos, valores, check, 1);
+/*Los nodos son especiales, dado que incorporan mucha más información, por lo que es recomendables no usar el mecanismo de caché ya que se corre el riesgo de desbordar el tamaño de la query. Es por ello, que forzamos la sincronización despúes de cada insercción */
+		cFT.forzarSync();
+		Logger.getGlobal().fine("Nodo insertado");
+		valores.clear();
+	  }
+	  cFT.forzarSync();
+	  cFT.esperarSubida();
+	} catch (SQLException ex) {
+	  Logger.getGlobal().log(Level.SEVERE, null, ex);
+	}
+
+
+	return false;
+  }
+\end{lstlisting}
+\caption{Código: Fusion Tables: Subsitema de subida de nodos}
+\end{figure}
+
+\subsection{Actualización de Pasos por Horas}
+
+Este subsistema se encarga de calcular los pasos que han transcurrido por cada nodo agrupados en intervalos y subirlos a una tabla de Google Fusion Tables. Hace uso de dos funciones principales. La primera de ella se encarga de localizar la fecha a la cual pertenecen los últimos temporales alojados en la tabla de Fusion Tables. Se presenta a continuación dicha función:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+  public String setFechaUltima() {
+	Sqlresponse r = cFT.select(TABLAID, "Intervalo", "Total>0", "ORDER BY \'Intervalo\' DESC LIMIT 1");
+	String mifecha = (String) r.getRows().get(0).get(0);
+	try {
+	  
+	  Date b = _d.sdf.parse((String) r.getRows().get(0).get(0));
+	  Calendar c = Calendar.getInstance();
+	  c.setTime(b);
+	  c.add(Calendar.HOUR, -24);
+	  mifecha = _d.sdf.format(b);
+	  this.fecha = mifecha;
+	  return fecha;
+	  
+	} catch (ParseException ex) {
+	  Logger.getLogger(PasosPorHoras.class.getName()).log(Level.SEVERE, null, ex);
+	}
+	//this.fecha = (String) r.getRows().get(0).get(0);
+	return mifecha;
+  }
+\end{lstlisting}
+\caption{Código: Fusion Tables: Subsitema de subida de Pasos por hora I}
+\end{figure}
+
+Como se puede observar, la ventana se amplía 24 horas. Esto es para tener la certeza de que todos los valores alojados en el sistema local se encuentran en el sistema en la nube.
+
+A continuación la función que se encarga de calcular y subir los valores a Fusion Tables:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+  public boolean calcular() {
+	Conectar conectar = new Conectar();
+	try {
+	  Statement st = conectar.crearSt();
+	  Logger.getGlobal().log(Level.INFO, "Calculando pasos en DB LOCAL");
+	  rs = st.executeQuery("CALL agrupaPasosPorIntervalosNodosSeparados('" + fecha + "','" + _d.sdf.format(Calendar.getInstance().getTime()) + "','" + 60 + "')");
+	  List<String> valores = new ArrayList<>();
+	  Logger.getGlobal().log(Level.INFO, "Subiendo información a la Nube");
+	  while (rs.next()) {
+		valores.add(rs.getString(1)); //Intervalo
+		valores.add(rs.getString(2)); //idNodo
+		valores.add(rs.getString(3)); //Total
+		valores.add(rs.getString(7)); //poligono	   
+		try {
+		  Logger.getGlobal().fine("Valores:" + rs.getString(2) + " " + rs.getInt(3) + " " + rs.getString(6));
+		  infoNodo_pasoPorHora.update(rs.getString(2), rs.getInt(3), rs.getString(6));
+		} catch (Exception ex) {
+		  Logger.getGlobal().log(Level.SEVERE, ex.getMessage());
+		}
+		cFT.insert(TABLAID, campos, valores, check, 2);
+		valores.clear();
+	  }
+	  Logger.getGlobal().log(Level.INFO, "Todos los valores procesados.");
+	  cFT.forzarSync();
+	  Logger.getGlobal().log(Level.INFO, "Esperando al envío y confirmación de los valores en la nube.");
+	  cFT.esperarSubida();
+	  Logger.getGlobal().log(Level.INFO, "Todos los valores subidos a la nube.");
+	} catch (SQLException ex) {
+	  Logger.getGlobal().log(Level.SEVERE, "Fallo en cálculo de los pasos. " + ex.getMessage(), ex);
+	}
+	return true;
+  }
+\end{lstlisting}
+\caption{Código: Fusion Tables: Subsitema de subida de Pasos por hora II}
+\end{figure}
+
+En dicho código se presenta la variable \texttt{infoNodo\_pasoPorHora}. Dicha variable obedece a un sistema de cálculo de estadísticas en que se está trabajando para versiones futuras.
+
+\subsection{Actualización de Trazas por Horas}
+
+Al igual que el submódulo anterior, este módulo también calcula la última tupla insertada en la nube con una función similar, por lo que no será añadido el código perteneciente a dicha función. A continuación, el código de cálculo y subida de las trazas por horas:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+public boolean calcular() {
+Conectar conectar = new Conectar();
+try {
+  Statement st = conectar.crearSt();
+  Logger.getGlobal().fine("CALL localizaTrazasNodos2('" + fecha + "','" + _d.sdf.format(Calendar.getInstance().getTime()) + "','" + 60 + "')");
+  rs = st.executeQuery("CALL localizaTrazasNodos2('" + fecha + "','" + _d.sdf.format(Calendar.getInstance().getTime()) + "','" + 60 + "')");
+  List<String> valores = new ArrayList<>();
+while (rs.next()) {
+	//System.err.println("->" + rs.getString(1) + " " + rs.getString(2) + " " + rs.getString(3));
+	valores.add(rs.getString(1)); //Fecha
+	valores.add(rs.getString(2)); //Origen
+	valores.add(rs.getString(3)); //Destino
+	valores.add(rs.getString(4)); //total
+	valores.add(rs.getString(5)); //Diferencia
+
+	String poligono = "<LineString>  <coordinates>   "+rs.getString(7)+", "+rs.getString(6)+", 0.	 "+rs.getString(9)+", "+rs.getString(8)+", 0.  </coordinates> </LineString>";
+	valores.add(poligono); //nombre
+	double earthRadius = 3958.75;
+	double dLat = Math.toRadians(rs.getDouble(8)-rs.getDouble(6));
+	double dLng = Math.toRadians(rs.getDouble(9)-rs.getDouble(7));
+	double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+		   Math.cos(Math.toRadians(rs.getDouble(6))) * Math.cos(Math.toRadians(rs.getDouble(8))) *
+		   Math.sin(dLng/2) * Math.sin(dLng/2);
+	double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+	double dist = earthRadius * c;
+
+	int meterConversion = 1609;
+	float t = (float) dist * meterConversion;
+	valores.add(Float.toString(t));
+	cFT.insert(TABLAID, campos, valores, check);
+	valores.clear();
+  }
+  
+   cFT.forzarSync();
+   cFT.esperarSubida();
+} catch (SQLException ex) {
+  Logger.getGlobal().log(Level.SEVERE, null, ex);
+}
+return false;
+}
+\end{lstlisting}
+\caption{Código: Fusion Tables: Subsitema de subida de Trazas por hora}
+\end{figure}
+
+Para facilitar la representación, este método dibuja un círculo mediante KML para geoposicionar el nodo en un mapa de Fusion Tables. Esto fue cambiado durante una fase avanzada del proyecto, debido a que se decidió que la geolocalización fuese con cada paso en lugar de directamente en el nodo, debido a que los nodos podían ser cambiados de sitio, mostrando entonces el sistema una información errónea o no consistente.
+
+\section{Cliente Actualizador FT}
+
+Todos estos submódulos son controlados por el módulo Actualizador FT que se presenta a continuación:
+
+Este módulo, al igual que el actualizador local consta de dos métodos: uno para el primer arranque (donde todos los valores deben ser subidos por primera vez) y otro modo automático.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+public void start() {
+	if (_c.getBool("ft.primera_vez")) {
+		Logger.getGlobal().log(Level.INFO, "Esperando 10 minutos para el comienzo del sincronizado forzado en la NUBE");
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException ex) {
+			Logger.getLogger(ActualizadorFT.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		Logger.getGlobal().log(Level.INFO, "Comenzando sincronizado forzado en la nube");
+
+		//Si es nuestra primera vez, habrá que hacerlo desde el origen de los tiempos!
+		Nodos n = new Nodos();
+		n.calcular();
+		Logger.getGlobal().log(Level.INFO, "Nodos sincronizados");
+		PasosPorHoras h = new PasosPorHoras("2014-07-01 00:00:00 ");
+		h.check = true;
+		h.calcular();
+		Logger.getGlobal().log(Level.INFO, "Pasos sincronizados");
+		TrazasPorHoras t = new TrazasPorHoras("2014-05-23 10:26:54 ");
+		t.check = true;
+		t.calcular();
+		Logger.getGlobal().log(Level.INFO, "Trazas sincronizadas");
+		_c.set("ft.primera_vez", "false");
+		Logger.getGlobal().log(Level.INFO, "Sincronizado forzado en la nube programado COMPLETO.");
+	}
+	Timer timer = new Timer("ActualizadorFusionTable", true);
+	//timer.scheduleAtFixedRate(temporizador, _c.getLong("ft.periodo_actualizacion"), _c.getLong("ft.periodo_actualizacion"));
+	timer.scheduleAtFixedRate(temporizador, _c.getLong("ft.tiempo_espera"), _c.getLong("ft.periodo_actualizacion"));
+}
+\end{lstlisting}
+\caption{Código: Fusion Tables: Cliente Actualizador de FT}
+\end{figure}
+
+Este módulo hace uso de un evento programado mediante el objeto temporizador que instanciado en el constructor tal y como muestra el siguiente código:
+
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+        this.temporizador = new TimerTask() {
+            @Override
+            public void run() {
+                Logger.getGlobal().log(Level.INFO, "Comenzando sincronizado programado en la nube.");
+
+                if (conta_nodos == MAX_conta_nodos) {
+                    Nodos n = new Nodos();
+                    n.calcular();
+                    Logger.getGlobal().log(Level.INFO, "Nodos sincronizados");
+                    conta_nodos = 0;
+
+                } else {
+                    conta_nodos++;
+                }
+                infoNodo_pasoPorHora.reset();
+                PasosPorHoras h = new PasosPorHoras();
+                Logger.getGlobal().log(Level.INFO, "Sincronizando Pasos desde " + h.getFecha());
+                h.check = true;
+                h.calcular();
+                Logger.getGlobal().log(Level.INFO, "Pasos sincronizados.");
+                Logger.getGlobal().log(Level.INFO, "Preparando envío de Tweet.");
+                TwitterAgente _t = new TwitterAgente();
+                _t.publicar(infoNodo_pasoPorHora.prime());
+                TrazasPorHoras t = new TrazasPorHoras();
+                Logger.getGlobal().log(Level.INFO, "Pasos sincronizados desde " + t.getFecha());
+                t.check = true;
+                t.calcular();
+                Logger.getGlobal().log(Level.INFO, "Trazas sincronizadas.");
+                Logger.getGlobal().log(Level.INFO, "Sincronizado programado en la nube programado COMPLETO.");
+                Estadisticas.prime();
+            }
+        };
+\end{lstlisting}
+\caption{Código: Fusion Tables: Cliente Actualizador de FT: Temporizador}
+\end{figure}
+
+Esta tarea es ejecutada cada $X$ minutos por el módulo, en función de lo que indique el fichero de configuración.
+
+Además, en este código se muestran dos módulos que aún no han sido presentados: el módulo de publicación twitter instanciado en la variable \texttt{\_t} y el módulo de estadísticas en el que se está actualmente trabajando.
+
+
+\vfill
+\cleardoublepage

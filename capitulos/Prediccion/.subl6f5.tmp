@@ -1,0 +1,231 @@
+\myChapter{Predicción Offline}\label{chap:prediccionoffline}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+
+\clearpage
+
+En los capítulos anteriores hemos descrito el sistema que monitoriza el estado del tráfico mediante la adquisición y procesado del número de dispositivos que han sido detectados por los distintos sensores desplegados en el mapa. De esta forma ofrecemos un sistema que es capaz de recoger el estado del flujo del tráfico en instantes pasados de tiempo. Debido también a las optimizaciones del procesado de datos llevadas a cabo que lo acercan al tiempo real, es posible también hablar de un sistema capaz de mostrar el estado ``actual'' del tráfico.
+
+Habiendo cubierto el ``pasado'' y el ``presente'', en este capítulo abordaremos la predicción de los datos futuros en función de los datos pasados haciendo uso de \emph{Técnicas de Predicción de Series Temporales}.
+
+Sin embargo, es necesario entender que esta no ha sido la labor principal del estudiante en la presentación del sistema presentado, sino una aplicación práctica al sistema de procesado y almacenamiento de los datos.
+
+Se presenta por tanto en este capítulo las predicciones ``offline'' realizadas sobre el sistema de datos desarrollado. Entendemos como predicción offline aquella que ha sido realizada con un conjunto de datos estático de forma manual. En el Capítulo (\ref{chap:predicciononline}) se presenta el módulo de predicción Online desarrollado para SiMa. Entendiendo como predicción Online, a la predicción realizada en tiempo real y de forma automática por el sistema en función de los datos recibidos.
+
+\section{Estudio preliminar series temporales} 
+
+Debido a la gran cantidad de métodos y técnicas de predicción \footnote{Con las que mi compañero en el proyecto J.Asensio tuvo que lidiar mucho más en profundidad.} existentes en la bibliografía, se hacía necesario realizar un estudio preliminar sobre un conjunto de datos reales obtenido con el sistema.
+
+Principalmente estudiamos algoritmos de clustering (k-vecinos más cercanos, SOM \cite{Merelo1998}, métodos de predicción de series temporales y aproximación funcional (ARIMA, Croston, Theta, Spline y L-Co-R \cite{Box1976
+} \cite{Parras2012}), redes neuronales artificiales (MLP \ref{Castillo2000a} \ref{Castillo2000b}, RBF \ref{Rivas2004}), y árboles de decisión (C4.5, \ref{Quinlan1993} \ref{Quinlan1996}).
+
+Dado que los datos se recogen y almacenan manteniendo una marca de tiempo (esto es, pertenecen a una cronología), se aplicaron métodos muy conocidos en la predicción de series temporales para hacer predicciones certeras de los flujos de tráfico.
+
+La predicción de series temporales es un área de investigación en constante avance para conseguir desarrollar modelos eficaces en la predicción. Se distinguen dos tipos de técnicas de predicción: los métodos lineales y no lineales.
+
+Entre todos esos métodos, ARIMA \cite{BoxJenk} es el método lineal más potente y con mayor éxito, además de uno de los métodos más trabajados y estudiados para la predicción.
+
+Entre los métodos no-lineales se recogen los modelos autoregresivos \cite{TongI,TongII,Chang,Blockwell,Clements}. Sin embargo los métodos no lineales se construyen sobre modelos muy complejos, haciendo uso de bases no robustas, que en ocasiones resultan muy difíciles de configurar y usar.
+
+Concretamente se estudiaron los métodos ARIMA,Croston, Theta, Spline y L-Co-R  \ref{Box1976} \ref{Parras2012}.
+
+
+
+\subsection{ARIMA}
+
+Arima es método de regresión lineal propuesto por Box y Jenkins \cite{BoxJenk} mediante un modelo autorregresivo integrado de media móvil o ARIMA (acrónimo del inglés autoregressive integrated moving average). Se trata de un modelo estadístico que utiliza variables y regresiones de datos estadísticos con el fin de encontrar patrones para una predicción hacia el futuro.
+
+Este modelo trabaja en un sistema iterativo en tres estados consistente en: 
+
+\begin{figure}[H]
+\centerline{ \xymatrix@=1cm{*+[F]{Identificación de la serie} \ar[r] & *+[F]{Estimación de parámetros} \ar[r] & *+[F]{Verificación del modelo}  }}
+\bigskip{}
+\caption{Tareas del método de predicción ARIMA}
+\end{figure}
+
+\subsection{L-Co-R}
+
+L-Co-R (Lags COevolving with Rbfns) \cite{LCoRSoft,LCoRNeuro} es un algoritmo que diseña RBFNs para la predición de series temporales. Para ello obtiene el número apropiado de RBFs, un radio y centro para cada RBF, los pesos asociados a toda la red, un conjunto adecuado de retrasos de tiempo y además es capaz de eliminar la tendencia de la serie \cite{Zhang}.
+
+Esta propuesta resuelve el problema de la tendencia con un pre y post procesado automático de la serie y mediante el uso de un algoritmo evolutivo (EA)
+
+Dado que el objetivo principal del algoritmo implica construir al mismo tiempo los RBFNs y el conjunto de retrasos de tiempo, L-Co-R está basado en una aproximación coevolutiva. Esto es, el problema puede ser descompuesto en dos subproblemas coodependientes uno del otro.
+
+A continuación se presenta la composición del algoritmo L-Co-R
+
+\begin{itemize}
+\item Población de RBFNs: un conjunto de RBFNs que evolucionan para constituir el diseño apropiado de la red. La población usa una codificación real, en la que cada individuo representa un conjunto de neuronas (RBFs) que compone la red.
+\item Población de retrasos: conjunto de retrasos de tiempo evolucionados para predecir los valores futuros de cada serie. Esta población utiliza una coficación binaria donde cada gen representa si un retraso específico se emplea o no para realizar la predicción de la serie.
+\end{itemize}
+
+Unos individuos de cada población son por si mismos una posible solución al subproblema. La principal ventaja de L-Co-R es que es capaz de predecir cualquier serie temporal proporcionada para cualquier horizonte. El esquema general del algoritmo está disponible en \cite{LCoRSoft}.
+
+Al final del proceso co-evolutivo, dos modelos formados por una red neuronal y un conjunto de retardos. El primer modelo se compone de la mejor red y su mejor colaborador. El segundo modelo, se compone del mejor conjunto de retardos y su mejor colaborador. Ambos modelos son evaluados nuevamente, para determinar cual de ellos ofrece un mejor comportamiento de predicción.
+
+Una vez elegido el mejor modelo, se emplea para la predicción de los valores futuros en la serie temporal.
+
+Por tanto, L-Co-R no es un método determinista, es por ello que se recomiendo ejecutarlo para una misma serie temporal en varias ocasiones.
+
+\subsection{Weke Forecasting}
+
+
+Weka \cite{weka} es una herramienta desarrollada en Java como software libre por la Universidad de Waikato, New Zealand. Incluye una serie de algoritmos para el preprocesamiento y modelado de técnicas de minería de datos (clasificación, clastering, regresión y predicción).
+
+El entorno de weka permite elegir el algoritmo o método de predicción que será realizado, incluyendo métodos no lineales bastante potentes como son las máquinas de vector soporte o SVM (Support Vector Marchines) \cite{SVM} para entrenar un modelo basado en perceptrón multicapa \cite{perceptron}; este tipo de métodos no lineales son mucho más potentes y flexibles para las tareas de predicción de series temporales frente a técnicas estadísticas como ARIMA. Incluye también modelos más sencillos como los basados en regresión lineal \cite{regresion}.
+
+
+\section{Predicción por días}
+
+Los experimentos se llevaron a cabo con los datos recogidos durante 60 día. Los primeros 53 días son usados para el entrenamiento de los modelos predictivos· Los 7 restantes se usan para comprobar la bondad de las prediciones de cada uno de los modelos.
+
+Como nodo, se emplearon 5 de los primeros nodos que fueron instalados en la fase de pruebas del hardware. La Figura \ref{fig:exp1_series} muestra el número de dispositivos detectados por cada nodo en cada día de la semana.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=26pc]{img/prediccion/estadoNodos1-2.png}
+\includegraphics[width=26pc]{img/prediccion/estadoNodos3-4-5.png}
+\caption[Serie temporal de nodos para 60 días]{Serie temporal de los nodos 1,2,3,4,5 con el número de vehículos detectado por día de la semana. Debido a la ``mejor'' posición de los nodos 4 y 5 han detectado mayor número de vehículos, por lo que se les presenta en una gráfica separada.}
+\label{fig:exp1_series}
+\end{SCfigure}
+
+A partir de la serie temporal que conforma la serie temporal representada, se analiza el tráfico por día de la semana, quedando patente que el número total de dispositivos detectados claramente varía de los días laborables a los días no laborables (fines de semana principalmente). En la Figura \ref{fig:exp1_seriesSemana} se ha acumulado el número de vehículos para los conco nodos utilizados en estos experimentos; sin embargo, esta tendencia también se puede apreciar considerando un solo nodo.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=26pc]{img/prediccion/estadoNodosSemana.png}
+\caption[Total vehículos por día de la semana para la serie de 60 días]{Total de dispositivos detectados para los cinco nodos empleados agrupados por día de la semana}.
+\label{fig:exp1_seriesSemana}
+\end{SCfigure}
+
+En la Tabla \ref{tabla:metricasErrorNodo-porDias} muestra los resultados en cuanto al error cometido con cada método probado. Se muestran los resultados usando varias métricas de error tal y como se propone en [DeGooijer2006, Hyndman2008]. Así, para cada nodo, se calcula el error cometido con cada método probado, mostrando el error absoluto porcentual medio (Mean Absolute Percentage Error, MAPE [Bowerman2004]), error absoluto escalado medio (Mean Absolute Scaled Error, MASE [Hyndman2008]) y error cuadrático medio (mean squared error, MSE).
+
+\begin{table}[tb]
+\begin{centering}
+\begin{tabular}{|c|c|c|c|}
+\hline 
+\multicolumn{4}{|c|}{Nodo 1}\tabularnewline
+\hline 
+Método & MAPE & MASE & MSE\tabularnewline
+\hline 
+\hline 
+ARIMA & 40.42 & 1.14 & 424860.5\tabularnewline
+\hline 
+CROSTON & 39.28 & 1.13 & 387403.9\tabularnewline
+\hline 
+THETA & 41.16 & 1.17 & 443898.5\tabularnewline
+\hline 
+SPLINE & 43.87 & 1.12 & 488504.9\tabularnewline
+\hline 
+L-Co-R & \textbf{23.66} & \textbf{0.81} & \textbf{231731.8}\tabularnewline
+\hline 
+\end{tabular}
+
+
+\begin{tabular}{|c|c|c|c|}
+\hline 
+\multicolumn{4}{|c|}{Nodo 2}\tabularnewline
+\hline 
+Método & MAPE & MASE & MSE\tabularnewline
+\hline 
+\hline 
+ARIMA & 26.64 & \textbf{1.03} & \textbf{310105.3}\tabularnewline
+\hline 
+CROSTON & 27.98 & 1.26 & 398979.9\tabularnewline
+\hline 
+THETA & 26.77 & 1.03 & 312496.1\tabularnewline
+\hline 
+SPLINE & 34.53 & 1.27 & 447557.4\tabularnewline
+\hline 
+L-Co-R & \textbf{11.41} & 1.04 & 311561.7\tabularnewline
+\hline 
+\end{tabular}
+
+\begin{tabular}{|c|c|c|c|}
+\hline 
+\multicolumn{4}{|c|}{Nodo 3}\tabularnewline
+\hline 
+Método & MAPE & MASE & MSE\tabularnewline
+\hline 
+\hline 
+ARIMA & 35.11 & 1.32 & \textbf{150293.6}\tabularnewline
+\hline 
+CROSTON & 37.03 & 1.34 & 160970.9\tabularnewline
+\hline 
+THETA & 38.11 & 1.4 & 175710.7\tabularnewline
+\hline 
+SPLINE & 38.86 & 1.36 & 184807.2\tabularnewline
+\hline 
+L-Co-R & \textbf{10.56} & \textbf{0.84} & 182469.2\tabularnewline
+\hline 
+\end{tabular}
+
+\begin{tabular}{|c|c|c|c|}
+\hline 
+\multicolumn{4}{|c|}{Nodo 4}\tabularnewline
+\hline 
+Método & MAPE & MASE & MSE\tabularnewline
+\hline 
+\hline 
+ARIMA & 40.62 & 1.04 & 21792093\tabularnewline
+\hline 
+CROSTON & 56.83 & 1.25 & 25037291\tabularnewline
+\hline 
+THETA & 39.45 & 1.01 & 21510757\tabularnewline
+\hline 
+SPLINE & 39.45 & 1.24 & 28745309\tabularnewline
+\hline 
+L-Co-R & \textbf{6.26} & \textbf{0.07} & \textbf{1120317}\tabularnewline
+\hline 
+\end{tabular}
+
+\begin{tabular}{|c|c|c|c|}
+\hline 
+\multicolumn{4}{|c|}{Nodo 5}\tabularnewline
+\hline 
+Método & MAPE & MASE & MSE\tabularnewline
+\hline 
+\hline 
+ARIMA & 43.8 & 1.13 & \textbf{29974781}\tabularnewline
+\hline 
+CROSTON & 46.32 & 1.26 & 35082013\tabularnewline
+\hline 
+THETA & 45.78 & 1.3 & 35859271\tabularnewline
+\hline 
+SPLINE & 46.26 & 1.32 & 37288518\tabularnewline
+\hline 
+L-Co-R & \textbf{24.59} & \textbf{0.87} & 35875329\tabularnewline
+\hline 
+\end{tabular}
+\par\end{centering}
+
+\smallskip{}
+
+\caption[Métricas de error cometido por método en cada nodo]{Métricas de error cometido por método en cada nodo. El mejor resultado de cada columna se muestra resaltado en negrita}
+\label{tabla:metricasErrorNodo-porDias}
+
+\end{table}
+
+Como se puede observar, los mejores resultados se han obtenido con L-Co-R y ARIMA.
+
+\section{Predicción por horas}
+
+Si bien la predicción respecto series temporales basadas en días puede ser interesante en otros aspectos, la fluctuación del tráfico es demasiado variable respecto a un periodo de tiempo tan grande.
+
+Es por ello que se empieza a trabajar como métodos de predicción basados en las series temporales compuestas por los intervalos de horas del sistema. Así por ejemplo, resulta esperable que el tráfica disminuye de forma considerable durante las horas nocturnas y muestre un mayor afluente durante las horas diurnas.
+
+Las tres series consideradas han sido los resultados recogidos por los nodos de nuestro sistema durante las fechas del 31 de Diciembre del 2013 (00:00h) al 20 de Enero 2014 (23:59), agrupados en intervalos de horas. Se dispone por tanto de una serie de 505 valores.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=26pc]{img/prediccion/seriesABC.eps}
+\caption[Serie temporal de nodos por horas]{Serie temporal de los nodos 1,2,3 con el número de vehículos detectado por hora}
+%\label{fig:exp1_series}
+\end{SCfigure}
+
+
+\vfill
+\cleardoublepage

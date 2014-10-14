@@ -1,0 +1,54 @@
+\myChapter{Redes Sociales, Ciencia Abierta y Difusión}\label{chap:rs}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+La existencia de este breve capítulo en la redacción de esta memoria obedece al desempeño realizado en la difusión de la información relativa al proyecto SIPEsCA en las redes sociales. Si bien parte de la experiencia de publicación en redes sociales ha sido llevada de forma personal por los investigadores del proyecto, en últimas fases de desarrollo del proyecto se realizó la implementación de un agente (o bot) de publicación Twitter.
+
+Este agente permite la publicación en una cuenta de twitter especialmente dedicada a este cometido de la información en tiempo real del estado del tráfico. Sin embargo, la versatilidad y generalidad con la que ha sido diseñado permiten hacer uso de este módulo para la publicación periódica en Twitter de cualquier tipo de contenido que se desee.
+
+Además, se presenta brevemente el concepto de ciencia abierta bajo la cual se ha desarrollado todos los métodos, técnicas y sistemas presentados en este documento.
+
+Por último, se recoge un breve resumen de las apariciones y menciones en prensa relativas al proyecto SIPEsCA.
+
+\section{Redes Sociales} 
+
+Se estima que más del 80\% de los usuarios de internet en España hace uso activo de las redes sociales \cite{redessociales1}, siendo las redes sociales más empleadas Facebook, Tuenti, Twitter y Youtube \cite{redessociales2}. Es por ello que desde las fases más tempranas de desarrollo del proyecto se contempló la posibilidad de integración con dichas redes sociales \footnote{Salvo tuenti, que no fue considerado por tener un público más juvenil e infantil, no potencialmente interesado en el estado del tráfico.}
+
+Si bien sólo se ha realizado un agente para la publicación de forma automática en Twitter, existen mecanismos propios a las redes sociales para compartir la información publicada entre ellas.
+
+\subsection{Twitter}
+
+Se crean dos cuentas de usuario de twitter, la primera de ellas la cuenta \emph{@sipesca} con la información del avance del proyecto así como la redifusión de contenidos relacionados con el tráfico. Se crea adicionalmente la cuenta \emph{traficosipesca} donde se publica de forma regular la información relativa al estado del tráfico en alguna de las zonas donde se encuentran ubicados los nodos.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=12pc]{img/twitter/t1.png}\includegraphics[width=12pc]{img/twitter/t2.png}
+\caption[Tweets publicados de forma automática por el sistema]{Ejemplos de tweets publicados de forma regular y automática por el sistema}
+\end{SCfigure}
+
+Estos tweets hacen uso de un hashtag indicando la zona, por si el usuario desea suscribirse a la información de lugar concreto.
+Además, se ha pensado en la utilización de twitter para la notificación de otro tipo de eventos, siendo el módulo presentando a continuación solo un ejemplo de uso.
+
+\subsubsection{SiMa: Agente de Twitter}
+
+El agente de twitter implementado se basa en una implementación usando la librería de desarrolo de PHP de Twitter \cite{twitterapi}
+
+\subsection{Facebook}
+
+\subsection{Youtube}
+
+\subsection{Google Plus}
+
+\section{Ciencia Abierta}
+
+\subsection{Github}
+
+\section{Difusión en prensa del proyecto}
+
+\vfill
+\cleardoublepage

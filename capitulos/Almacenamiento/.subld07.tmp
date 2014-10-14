@@ -1,0 +1,63 @@
+\myChapter{Base de Datos en la Nube: Google Fusion Tables}\label{chap:servidor}
+\begin{flushright}{\slshape
+    Call me Ishmael.} \\ \medskip
+    --- {Herman Melville, Moby-Dick; or, The Whale}
+\end{flushright}
+\minitoc\mtcskip
+\vfill
+
+
+
+\section{Justificación y ventajas de uso} 
+
+\section{Google Fusion Tables}
+
+	\subsection{Arquitectura y almacenamiento de datos}
+
+		\subsubsection{Arquitectura}
+
+		\subsubsection{Stack Track}
+
+		\subsubsection{Row Store}
+
+		\subsubsection{Schema Store}
+
+		\subsubsection{View Store
+
+		\subsubsection{Comment Store}
+
+	\subsection{Query processing}
+
+	\subsection{Transactions}
+
+		\subsubsection{Write-ahead logging}
+
+		\subsubsection{Transaction Life Clicle}
+
+	\subsection{Data visualization}
+
+		\subsubsection{Visualization Infrastructure}
+
+		\subsubsection{Embeding}
+
+	\subsection{Geographical Features}
+
+		\subsection{Goolge Maps Infrastructure}
+
+		\subsection{Spatial Index}
+
+		\subsection{Sampling}
+
+		\subsection{Heat Maps}
+
+		\subsection{Embedding}
+
+	\subsection{Fusion Tables API}
+
+\section{Sima: Actualizador Fusion Tables}
+
+
+Hola mundo
+
+\vfill
+\cleardoublepage

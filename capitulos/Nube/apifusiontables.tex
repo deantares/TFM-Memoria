@@ -1,0 +1,390 @@
+\myChapter{Sirviendo los datos: Google Fusion Tables API REST}\label{chap:apirest}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+
+
+%Parámetros para la configuración del nuevo lenguaje
+\lstdefinelanguage{API}
+{
+  % list of keywords
+  morekeywords={
+    SELECT,FROM,WHERE,GROUP,ORDER,BY,OFFSET, LIMIT,AND,ASC,DESC
+  },
+  sensitive=false, % keywords are not case-sensitive
+  %morecomment=[l]{//}, % l is for line comment
+  %morecomment=[s]{/*}{*/}, % s is for start and end delimiter
+  morecomment=[s]{<}{>}, % s is for start and end delimiter
+  morestring=[b]" % defines that strings are enclosed in double quotes
+}
+
+\definecolor{eclipseBlue}{RGB}{42,0.0,255}
+\definecolor{eclipseGreen}{RGB}{53,107,65}
+\definecolor{eclipsePurple}{RGB}{127,0,85}
+
+
+\clearpage
+
+En este capítulo se define la API REST de comunicación de Google Fusion Tables [referencia a https://developers.google.com/fusiontables/ ] , recogiendo algunas de las peticiones más frecuentes así como la integración del servicio en otras plataformas de Google y el uso en cualquier Web mediante peticiones REST con Javascript.
+
+\section{Referencia rápida de la API REST}
+
+\subsection{Consultas sobre los datos: SELECT}
+
+Para realizar consultas sobre los datos, se realiza una petición HTTP GET al servidor de Google empleando la siguiente sintaxis:
+
+\begin{figure}[H]
+  \begin{lstlisting}[  language={API}, basicstyle=\small\ttfamily, % Global Code Style
+  captionpos=b, % Position of the Caption (t for top, b for bottom)
+  extendedchars=true, % Allows 256 instead of 128 ASCII characters
+  tabsize=2, % number of spaces indented when discovering a tab 
+  columns=fixed, % make all characters equal width
+  keepspaces=true, % does not ignore spaces to fit width, convert tabs to spaces
+  showstringspaces=false, % lets spaces in strings appear as real spaces
+  breaklines=true, % wrap lines if they don't fit
+  frame=trbl, % draw a frame at the top, right, left and bottom of the listing
+  frameround=tttt, % make the frame round at all four corners
+  framesep=4pt, % quarter circle size of the round corners
+  %numbers=left, % show line numbers at the left
+  %numberstyle=\tiny\ttfamily, % style of the line numbers
+  commentstyle=\color{eclipseGreen}, % style of comments
+  keywordstyle=\color{darkOrange}, % style of keywords
+  stringstyle=\color{eclipseBlue}, % style of strings
+  ]
+"https://www.googleapis.com/fusiontables/v1/query?sql="
+SELECT  <column_spec> {, <column_spec>}*
+
+FROM <table_id>
+
+{ WHERE <filter_condition> | <spatial_condition> { AND <filter_condition> }* }
+
+{ GROUP BY <column_name> {, <column_name>}* }
+
+{ ORDER BY <column_spec> { ASC | DESC } | <spatial_relationship> }
+
+{ OFFSET <number> }
+
+{ LIMIT <number> }
+\end{lstlisting}
+\caption{Google Fusion Tables API: Select}
+\end{figure}
+
+\subsubsection{Retorno}
+
+Si la consulta SELECT es procesada correctamente, se devuelve un JSON formateando los datos en UTF-8. Si se desea, se puede modificar la petición para recibir los datos en formtao CSV.
+
+\subsubsection{Parámetros}
+
+\begin{description}
+\item [{\texttt{{<column\_spec>}}}] Indica que columnas desean ser incluidas en la salida del SELECT. Cuando se usa con una sentencia \mbox{\emph{ORDER BY}} la columna por la que se ordena debe ser incliuda en este conjunnto. Posibles valores
+	\begin{description}
+	\item [{\texttt{{<column\_name>}}}] Descrito más adelante en este capítulo.
+	\item [{\texttt{{<aggregate\_spec>}}}] Descrito más adelante en este capítulo.
+	\item [{\texttt{{ROWID}}}] Identificador de tupla. Necesario para sentencias INSERT,UPDATE o DELETE.
+	\item [{\texttt{{*}}}] Operador comodín, permite devolver todas las columnas de la tabla.
+	\end{description}
+\item [{\texttt{{<column\_name>}}}] El nombre de la columna, es case sensitive.
+\item [{\texttt{{<aggregate\_spec>}}}] Función de agregación que especifica una función que será aplicada a todos los valores de una columna. Devuelve un valor numérico. No se puede emplear con la sentencia ORDER BY. Se puede emplear cualquier de las siguientes operaciones comunes a lenguajes SQL: \texttt{COUNT,SUM,AVERAGE,MAXIMUM,MINIMUM}.
+\item [{\texttt{{<table\_id>}}}] Identificador único de la tabla, a la cual el usuario tiene permiso de acceso.
+\item [{\texttt{{<filter\_condition>}}}] Expresión Booleana. Sólo las tuplas que cumplan la condición serán incluidas entre los datos devueltos. Se puede combinar con \texttt{AND} para unir varios filtros. El operador \texttt{OR} no está soportado.
+\item [{\texttt{{<column\_condition>}}}] Usado en las sentencias WHERE. Indica una condición que tiene que cumplir el valor de una tupla para ser incluida dentro de los datos devueltos. Se encuentran disponibles lis siguientes operadores.
+	\begin{itemize}
+		\item Valores numéricos: \texttt{<,>,>=,<=,=}
+		\item Cadenas de texto: \texttt{<,>,>=,<=,=,LIKE,MATCHES,STARTS WITH, ENDS WITH, CONTAINS, CONTAINS IGNORING CASE, DOES NOT CONTAINT, NOT EQUAL TO, IN}
+		\item Columnas geolocoalizadas: Están disponibles los mismo operadores que para \emph{<spatial\_condition>}.
+		\item Columnas con fechas: Son tratadas como valores numéricos.
+		\item \emph{NO SOPORTADO}: Consultas sobre fórmulas o variables calculadas.
+	\end{itemize}
+\item [{\texttt{{<row\_condition>}}}] Indica una tupla concreta mediante una asignación \texttt{ROWID = <string>}.
+\item [{\texttt{{<spatial\_condition>}}}] Indica una zona concreta mediante una asignación \texttt{ST\_INTERSECTS (<location\_column>,<geometry>)}. Puede ser combinado con \texttt{ORDER BY} haciendo uso de la función \texttt{ST\_DISTANCE}. Existen tres zonas \texttt{<geometry>} que pueden ser empleadas
+	\begin{itemize}
+		\item Circulos representados como \texttt{CIRCLE(<coordinate>,<radius>)}.
+		\item Rectágulos representados como \texttt{RECTANGLE(<lower\_left\_corner>, <upper\_right\_corner>)}
+		\item Coordenadas representadas como \texttt{LATLNG{<numbre>,<number>}}. Advertencia: se expresan en orden contrario al estándar KML.
+	\end{itemize}
+\item [{\texttt{{GROUP BY}}}] Agrupa los resultados de salida mediante un valor de una columna común. El propósito es calcular un resumen con columnas \texttt{<aggregate\_spec>}.
+\item [{\texttt{{ORDER BY}}}] Ordena la salida en función de una sola columna o una \texttt{spatial\_relationship} representada como \texttt{ORDER BY ST\_DISTANCE(<location\_column> , <coordinates> )}. 
+\item [{\texttt{{OFFSET}}}] Omite los primeros \texttt{<number>} tuplas de la tabla. 
+\item [{\texttt{{LIMIT}}}] Devuelve un máximo de \texttt{<number>} tuplas.
+\item [{\texttt{{<number>}}}] Un número entero. No puede ser una expresión.
+\item [{\texttt{{<location\_columna>}}}] Una columna geoposicionada.
+\item [{\texttt{{<geometry>}}}] Usar uno de los siguientes \texttt{<circle>} o \texttt{<rectangle>}.
+\item [{\texttt{{<radius>}}}] Un entero que indica el radio de un círculo expresado en metros.
+\end{description}
+
+
+\subsection{Inserccione sobre los datos: INSERT}
+
+Para insertar una o más tuplas en la tabla, se usa la siguiente petición HTTP POST:
+
+\begin{figure}[H]
+  \begin{lstlisting}[  language={API}, basicstyle=\small\ttfamily, % Global Code Style
+  captionpos=b, % Position of the Caption (t for top, b for bottom)
+  extendedchars=true, % Allows 256 instead of 128 ASCII characters
+  tabsize=2, % number of spaces indented when discovering a tab 
+  columns=fixed, % make all characters equal width
+  keepspaces=true, % does not ignore spaces to fit width, convert tabs to spaces
+  showstringspaces=false, % lets spaces in strings appear as real spaces
+  breaklines=true, % wrap lines if they don't fit
+  frame=trbl, % draw a frame at the top, right, left and bottom of the listing
+  frameround=tttt, % make the frame round at all four corners
+  framesep=4pt, % quarter circle size of the round corners
+  %numbers=left, % show line numbers at the left
+  %numberstyle=\tiny\ttfamily, % style of the line numbers
+  commentstyle=\color{eclipseGreen}, % style of comments
+  keywordstyle=\color{darkOrange}, % style of keywords
+  stringstyle=\color{eclipseBlue}, % style of strings
+  ]
+INSERT INTO <table_id> (<column_name> {, <column_name>}*)
+	VALUES (<value> {, <value>}*)
+
+{ {;INSERT INTO <table_id> (<column_name> {, <column_name>}*) VALUES (<value> {, <value>}*)}* ;}
+\end{lstlisting}
+\caption{Google Fusion Tables API: INSERT}
+\end{figure}
+
+Se pueden insertar un máximo de 500 tuplas o un tamaño máximo de petición de 1MB.
+
+\subsubsection{Retorno}
+
+Si tiene éxito la petición devuelve el \texttt{ROWID} asociado a la tupla recién insertada.
+
+\subsubsection{Parámetros}
+
+\begin{description}
+	\item [{\texttt{{<table\_id>}}}] Identificador único de la tabla a la cual el usuario tiene permisos de escritura.
+	\item [{\texttt{{<column\_namec>}}}] El nombre de una columna de la tabla. Es case sensitive.
+	\item [{\texttt{{<value>}}}] El número entero, en coma flotante o cadena de texto que quiere ser asignada a la columna. O una lista de dichos valores separados por comas. Para dejar un valor de columna sin asignar, se emplea el operador cadena vacía \texttt{""}. En una columna con localización geográfica, se puede emplear una cadena de texto con la dirección postal, un par de columnas con la latitud/longitud o una cadena de texto que contenga un punto geográfico siguiendo el estándar \texttt{KML} siendo permitido especificar puntos, líneas o polígonos.
+
+	\end{description}
+
+\subsection{Actualizaciones sobre los datos: UPDATE}
+
+Para actualizar una o más columnas de una ÚNICA tupla, se usa la siguiente petición HTTP POST:
+
+\begin{figure}[H]
+  \begin{lstlisting}[  language={API}, basicstyle=\small\ttfamily, % Global Code Style
+  captionpos=b, % Position of the Caption (t for top, b for bottom)
+  extendedchars=true, % Allows 256 instead of 128 ASCII characters
+  tabsize=2, % number of spaces indented when discovering a tab 
+  columns=fixed, % make all characters equal width
+  keepspaces=true, % does not ignore spaces to fit width, convert tabs to spaces
+  showstringspaces=false, % lets spaces in strings appear as real spaces
+  breaklines=true, % wrap lines if they don't fit
+  frame=trbl, % draw a frame at the top, right, left and bottom of the listing
+  frameround=tttt, % make the frame round at all four corners
+  framesep=4pt, % quarter circle size of the round corners
+  %numbers=left, % show line numbers at the left
+  %numberstyle=\tiny\ttfamily, % style of the line numbers
+  commentstyle=\color{eclipseGreen}, % style of comments
+  keywordstyle=\color{darkOrange}, % style of keywords
+  stringstyle=\color{eclipseBlue}, % style of strings
+  ]
+UPDATE <table_id>
+SET <column_name> = <value> {, <column_name> = <value> }*
+WHERE ROWID = <row_id>
+\end{lstlisting}
+\caption{Google Fusion Tables API: UPDATE}
+\end{figure}
+
+\subsubsection{Retorno}
+
+Si la petición es procesada con éxito, no se devuelve ningún objeto, pero la petición devuelve un estado 200 OK.
+
+\subsubsection{Parámetros}
+
+\begin{description}
+	\item [{\texttt{{<table\_id>}}}] Identificador único de la tabla a la cual el usuario tiene permisos de escritura.
+	\item [{\texttt{{<column\_namec>}}}] El nombre de una columna de la tabla. Es case sensitive.
+	\item [{\texttt{{<value>}}}] El número entero, en coma flotante o cadena de texto que quiere ser asignada a la columna. O una lista de dichos valores separados por comas. Para dejar un valor de columna sin asignar, se emplea el operador cadena vacía \texttt{""}. En una columna con localización geográfica, se puede emplear una cadena de texto con la dirección postal, un par de columnas con la latitud/longitud o una cadena de texto que contenga un punto geográfico siguiendo el estándar \texttt{KML} siendo permitido especificar puntos, líneas o polígonos.
+	\item [{\texttt{{<row\_id>}}}] El identificador único de tupla. Para conseguir dicho identificador se debe realizar una petición \texttt{SELECT} antes de realizar esta petición.
+	\end{description}
+
+\subsection{Borrado de datos: DELETE}
+
+Para borrar una tupla, se usa la siguiente petición HTTP POST:
+
+\begin{figure}[H]
+  \begin{lstlisting}[  language={API}, basicstyle=\small\ttfamily, % Global Code Style
+  captionpos=b, % Position of the Caption (t for top, b for bottom)
+  extendedchars=true, % Allows 256 instead of 128 ASCII characters
+  tabsize=2, % number of spaces indented when discovering a tab 
+  columns=fixed, % make all characters equal width
+  keepspaces=true, % does not ignore spaces to fit width, convert tabs to spaces
+  showstringspaces=false, % lets spaces in strings appear as real spaces
+  breaklines=true, % wrap lines if they don't fit
+  frame=trbl, % draw a frame at the top, right, left and bottom of the listing
+  frameround=tttt, % make the frame round at all four corners
+  framesep=4pt, % quarter circle size of the round corners
+  %numbers=left, % show line numbers at the left
+  %numberstyle=\tiny\ttfamily, % style of the line numbers
+  commentstyle=\color{eclipseGreen}, % style of comments
+  keywordstyle=\color{darkOrange}, % style of keywords
+  stringstyle=\color{eclipseBlue}, % style of strings
+  ]
+DELETE FROM <table_id>{ WHERE ROWID = <row_id>}
+\end{lstlisting}
+\caption{Google Fusion Tables API: DELETE}
+\end{figure}
+
+\subsubsection{Retorno}
+
+Si la petición es procesada con éxito, no se devuelve ningún objeto, pero la petición devuelve un estado 200 OK.
+
+\subsubsection{Parámetros}
+
+\begin{description}
+	\item [{\texttt{{<table\_id>}}}] Identificador único de la tabla a la cual el usuario tiene permisos de escritura.
+	\item [{\texttt{{<row\_id>}}}] El identificador único de tupla. Para conseguir dicho identificador se debe realizar una petición \texttt{SELECT} antes de realizar esta petición.
+	\end{description}
+
+\section{Ejemplo de uso}
+
+En el siguiente apartado se resumen algunos ejemplos de uso de la API de Google Fusion Tables, así como de ejemplos de integración en distintos servicios de Google.
+
+\subsection{Impresión en tabla HTML}
+
+El siguiente código Javascript realiza una petición a la API REST para traer una estructura JSON con la información solicitada, la cual es procesada y representada en una tabla HTML
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+function drawTableNodos(contenedor, nombre) {    
+    var query = "select col0>>0, col3>>1, MINIMUM(col1>>0) as 'Fecha Implantación', MAXIMUM(col1>>0) as 'Fecha Último Registro' from 1WENRMKLPrLdl-8WCKE0P6PTCwRkqCn88tRg-WuHV group by col3>>1,col0>>0,col5>>1";  
+    var queryText = encodeURIComponent(query);  
+    var gvizQuery = new google.visualization.Query(  
+        'http://www.google.com/fusiontables/gvizdata?tq=' + queryText);  
+  
+    gvizQuery.send(function (response) {  
+        console.log(response);  
+        var numRows = response.getDataTable().getNumberOfRows();  
+        var numCols = response.getDataTable().getNumberOfColumns();  
+        var ftdata = ['<table class="table" style="overflow-x:scroll;" id="' + nombre + '"><thead><tr>'];  
+        for (var i = 1; i < numCols; i++) {  
+            var columnTitle = response.getDataTable().getColumnLabel(i);  
+            ftdata.push('<th>' + columnTitle + '</th>');  
+        }  
+        ftdata.push('<th class="acciones">Acciones</th></tr></thead><tbody>');  
+  
+        for (var i = 0; i < numRows; i++) {  
+            ftdata.push('<tr>');  
+            var idNodo;   var nameNodo;  
+            for (var j = 0; j < numCols; j++) {  
+                var rowValue = response.getDataTable().getValue(i, j);  
+                if (j == 0) {  
+                    idNodo = rowValue;  
+                } else if (j != 1) {  
+                    ftdata.push('<td>' + rowValue + '</td>');  
+                } else {  
+                    nameNodo = rowValue;  
+                    ftdata.push('<td>' + rowValue + '</td>');  
+                }  
+            }  
+            ftdata.push('<td class="center "><a class="btn btn-success" onclick=\'showNodoInfo(' + idNodo + ',\"' + nameNodo + '\");\'><i class="icon-zoom-in icon-white"></i>Ver</a></td></tr>');  
+        }  
+        ftdata.push('</tbody></table>');  
+        document.getElementById(contenedor).innerHTML = ftdata.join('');  
+    });  
+} 
+\end{lstlisting}
+\caption{Código: Ejemplo de uso de la API REST de Google Fusion Tables}
+\label{fig:ejemploUsoFusionTables-Tabla}
+\end{figure}
+
+\subsection{Mapa de Google Maps}
+
+Google nos ofrece dos maneras de incorporar la información alojada en Google Fusion Tables en un mapa de Google Maps. La primera de ella es un mecanismo nativo, que aunque es bastante potente, ofrece poco mecanismos avanzados y de personalización. El segundo método presentado, hace uso de la API REST para realizar una petición y crear de forma manual la capa.
+
+\subsubsection{Forma nativa}
+
+Google Maps funciona mediante \emph{capas} (layer), que no son más que gráficos geolocalizados que son superpuestos sobre el mapa. De forma nativa, Google permite crear una capa sobre un mapa. En el siguiente código, se muestra como añadir una capa con la información relativa a una capa de Fusion Tables mediante Javascript:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+ layer = new google.maps.FusionTablesLayer({      map: map,
+      heatmap: { enabled: false },
+      query: {
+        select: "poligono",
+        from: "1WENRMKLPrLdl-8WCKE0P6PTCwRkqCn88tRg-WuHV",
+        where: "Intervalo = '2014-03-12 10:00:00'"
+      },
+      options: {
+        styleId: 3,
+        templateId: 5,
+        suppressInfoWindows: true
+      }
+    });
+\end{lstlisting}
+\caption{Código: Ejemplo de uso de Google Fusion Tables en Google Maps.}
+\end{figure}
+
+\subsubsection{Mediante API REST}
+
+Sin embargo, el método anterior no permite mucha personalización (aunque si lo suficiente para un uso básico) ni permite realizar modificaciones en los datos u asociarles funcionalidades extras. Es por ello, que se presenta el siguiente código donde se hace uso de una capa de Google Maps usando la API REST directamente. En este caso, para realizar una capa con un ``mapa de calor''
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+var query = 'select latitud,longitud,Total from 1WENRMKLPrLdl-8WCKE0P6PTCwRkqCn88tRg-WuHV where col1\x3e\x3e0 \x3d \x27'+c+'\x27 limit 1000';var request = gapi.client.fusiontables.query.sqlGet({ sql: query });
+    
+request.execute(function(response) {
+  onDataFetched(response);
+  });
+    
+function onDataFetched(response) {
+  if (response.error) {
+    alert('Unable to fetch data. ' + response.error.message +
+        ' (' + response.error.code + ')');
+  } else {
+    drawHeatmap(extractLocations(response.rows));
+  }
+}
+
+function extractLocations(rows) {
+  var locations = [];
+  for (var i = 0; i < rows.length; ++i) {
+    var row = rows[i];
+    if (row[0]) {
+      var lat = row[0];
+      var lng = row[1];
+      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+        var latLng = new google.maps.LatLng(lat, lng);
+        var weight = row[2];
+         locations.push({ location: latLng, weight: parseFloat(weight) });
+      }
+    }
+  }
+  console.log(locations);
+  return locations;
+  }
+
+function drawHeatmap(locations) {
+var heatmap = new google.maps.visualization.HeatmapLayer({
+   dissipating: true,
+   gradient: [
+     'rgba(102,255,0,0)', 
+     'rgba(147,255,0,1)', 
+     'rgba(193,255,0,1)', 
+     'rgba(238,255,0,1)', 
+     'rgba(244,227,0,1)', 
+     'rgba(244,227,0,1)', 
+     'rgba(249,198,0,1)', 
+     'rgba(255,170,0,1)', 
+     'rgba(255,113,0,1)', 
+     'rgba(255,57,0,1)', 
+     'rgba(255,0,0,1)'
+   ],
+   opacity: 0.8,
+   radius: 30,
+   maxIntensity: 1000,
+   data: locations
+});
+heatmap.setMap(map);
+}
+\end{lstlisting}
+\caption{Código: Ejemplo de uso de la API REST de Google Fusion Tables en Google Maps.}
+\end{figure}
+
+\vfill
+\cleardoublepage

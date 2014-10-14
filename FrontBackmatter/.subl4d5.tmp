@@ -1,0 +1,50 @@
+%*******************************************************
+% Acknowledgments
+%*******************************************************
+\pdfbookmark[1]{Agradecimientos}{agradecimientos}
+
+\begin{flushright}{\slshape
+Estudia el pasado\\
+si quieres pronosticar el futuro.\\}  \medskip
+    --- {Confucio, 551AC-478AC}
+\end{flushright}
+
+
+
+\bigskip
+
+\begingroup
+\let\clearpage\relax
+\let\cleardoublepage\relax
+\let\cleardoublepage\relax
+\chapter*{Agradecimientos}
+
+===========Pendiente===========
+
+Resulta cuando menos curioso, que habiendo sido capaz de escribir más de un centenar de páginas para definir el proyecto, me cueste tanto escribir una sóla página para los agradecimientos. Antes de nada, hago un \texttt{\#include(all)} por si me olvido de citar a alguien que quede recogido.
+
+A mi familia: mi madre, mis hermanos José Andrés y David y a las familias que a su vez estos van creando Mari Jose y María del Mar\footnote{¡No has nacido y ya tienes una cita en un artículo científico!}: por aguantarme aunque la mitad de lo que les cuente le suene a chino y a veces piensen que estoy un poco loco.
+
+A mis compañeros de investigación: a mi jefe :) Pedro por darme la oportunidad de trabajar en un proyecto como este y ser de los mejores jefes que he tenido y de las mejores personas que he conocido; A JJ que es el que me tendió una mano para llegara este mundo de la investigación; a Antonio, por la paciencia y dedicación que pone en orientarme en el mundo de la investigación (aunque a veces no llegue a las fechas de los congresos); a Pablo, por ser el reflejo de lo que quiero ver en mi espejo en unos años; a Maribel, porque es una delicia trabajar e ir a las reuniones con ella y porque aprendí (por fin) R con su manual; a Javi compañero de proyecto, porque al ser los dos tan diferentes no dejábamos punto de vista sin contemplar; a Paloma compañera de andanzas en el máster; al resto del grupo de investigación (Gustavo, José Luis, Carlos, Carpio, Pedro G. , Juanlu, ...) porque entre todos ellos cada día aprendo algo. E incluyo a los también compañeros de la oficina de software libre, que se lo curran.
+
+A mis compañeros en en el despacho: Curro, Oresti, Nuria, Paloma, Antonio, Javi, Pablo por generar un ambiente tan bueno de trabajo; como en todo el CITIC aunque muchos se hayan ido ya a un lugar mejor: Quique, Leo, Raquel, Sara, Nolo, Cristina, Gonzalo,... Soy muy malo para los nombres, así que si me olvido de alguien que no sé preocupe, que está incluido arriba. Bueno, y no sólo a los compañeros sino a todo el personal del CITIC que pequeña mención especial para Paco I., Paco B.H, Bea,...  que siempre me ha echado una mano cuando he necesitado cualquier gestión.
+
+A mis amigos, tanto los que están cerca como los que están lejos: Ana G., Ana P. Alberto, Jero, Pelayo, Pili, Rafa, Sergio, ... Joe, que malo soy para poner nombres. Buenos, ellos saben quienes son.
+
+A mis compañeros del máster: Javi, Paloma, Miguel, Alfonso, Pedro, Pablo, Juan, José, Victor, Juan, ... porque yo pensaba que alguno no terminaba el máster vivo. Lo digo por lo de la nieve.
+
+A los compañeros de Ciudad2020, que se han encargado de la parte Hardware del proyecto: Manuel Rodriguez, Manuel Aragón, Alfredo Romeo; y a los compañeros de la OPA: Manuel Fernández y Manuel Gonzalez.
+
+A los profesores del máster y compañeros del departamento.
+
+A mis compañeros de piso, que no sabían si yo vivía allí o era un espectro con el que se cruzaban ocasionalmente en el pasillo o la cocina.
+
+Y bueno, un rinconcito friki. A Mercadona, Domino's,  Telepizza, Burger King, MacDonalds,... por se la base de mi \cancel{mala} alimentación. A los dueños de la Posada, porque cada vez que vamos nos ponen tapas más grandes y ricas. A Marvel, que queda vez hace películas mejores. A MLP:FIM, gracias a la cual estoy mejorando mi inglés. A Blizzard, porque matar hordas de demonios relaja bastante. A Valve, que ya pueden sacar el Half-Life 3 que ahora espero andar mejor de tiempo.
+
+Y en definitiva a todo el mundo, menos a las señoras mayores que se cuelan en la cola del Mercadona.
+
+
+\endgroup
+
+
+

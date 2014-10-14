@@ -1,0 +1,34 @@
+\myChapter{Futuras l\'ineas de Investigaci\'on}\label{chap:web}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\minitoc\mtcskip
+
+\clearpage
+\vfill
+
+Si bien el proyecto SIPEsCA se encuentra actualmente finalizado, se plantea seguir trabajando en los siguientes puntos a corto plazo:
+
+\begin{itemize}
+	\item Instalar más dispositivos de monitorización ampliando el área urbana cubierta, lo cual permita una malla de dispositivos mayor.
+	\item Instalar dispositivos en distintas ciudads para analizar el flujo de vehículos entre estas.
+	\item Comprobar la efectividad de nuevos métodos de predicción de series temporales para integrarlos en el sistema.
+	\item Usar nuevas redes sociales y herramientas móviles para ofrecer la información a los usuarios.
+	\item Ampliar la aplicación móvil para servir información de manera más personalizadas.
+\end{itemize}
+
+En cuanto a las líneas futuras, a medio o largo plazo, cabe destacar:
+
+\begin{itemize}
+	\item Realizar más análisis ``big data'' de los datos (no centrándose sólo en pasos y trazos).
+	\item Desarrollar aplicaciones móviles para nuevos sistemas (Windows Phone, iPhone/iPad, Android L, Android Wear, Google Glass, Firefox OS).
+	\item Analizar los datos con nuevas herramientas avanzadas de data-mining.
+	\item Migrar el servidor local a un servidor en la nube como MS Azure o Amazon EC2 para asegurar la disponibilidad.
+\end{itemize}
+
+
+
+
+\vfill
+\cleardoublepage

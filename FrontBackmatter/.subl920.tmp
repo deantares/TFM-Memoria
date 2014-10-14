@@ -1,0 +1,40 @@
+%*******************************************************
+% Acknowledgments
+%*******************************************************
+\pdfbookmark[1]{Agradecimientos}{agradecimientos}
+
+\begin{flushright}{\slshape
+Estudia el pasado\\
+si quieres pronosticar el futuro.\\}  \medskip
+    --- {Confucio, 551AC-478AC}
+\end{flushright}
+
+
+
+\bigskip
+
+\begingroup
+\let\clearpage\relax
+\let\cleardoublepage\relax
+\let\cleardoublepage\relax
+\chapter*{Agradecimientos}
+
+Pendiente
+
+Resulta cuando menos curioso, que habiendo sido capaz de escribir más de un centenar de páginas para definir el proyecto, me cueste tanto escribir una sóla página para los agradecimientos. Antes de nada, hago un \texttt{#include(all)} por si me olvido de citar a alguien que quede recogido.
+
+A mi familia: mi madre, mis hermanos José Andrés y David y a las familias que a su vez estos van creando Mari Jose y Maria del Mar: por aguantarme aunque la mitad de lo que les cuente le suene a chino y a veces piensen que estoy un poco loco.
+
+A mis compañeros de investigación: A JJ que es el que me tendió una mano para llegara este mundo; a Pedro (mi jefe :) ) por darme la oportunidad de trabajar en un proyecto como este y ser de los mejores jefes que he tenido y de las mejores personas que he conodico; a Antonio, por la paciencia y dedicación que pone en orientarme en el mundo de la investigación (aunque a veces no llegue a las fechas de los congresos); a Pablo, por ser el reflejo de lo que quiero ver en mi espejo en unos años; a Maribel, porque es una delicia trabajar e ir a las reuniones con ella y porque gracias a ella aprendí (por fin) R; a Javi compañero de proyecto, porque al ser los dos tan diferentes no dejábamos punto de vista sin contemplar; a Paloma compañera de andanzas en el máster; al resto del grupo de investigación (Gustavo, José Luis, Carlos, Carpio, Pedro G. , Juanlu, ...) porque entre todos ellos cada día aprendo algo.
+
+A mis compañeros en en el despacho (Curro, Oresti, Nuria, Paloma, Antonio, Javi, Pablo) como en todo el CITIC aunque muchos se hayan ido ya a un lugar mejor: Quique, Leo, Raquel, Sara, Nolo, Cristina, Gonzalo,... Esto de poner los nombres es bastante cansao, porque soy muy malo para los nombres. Bueno, y no sólo a los compañeros sino a todo el personal del CITIC que pequeña mención especial para Paco I., Paco B.H, Bea,...  que siempre me ha echado una mano cuando he necesitado cualquier gestión.
+
+A mis compañeros del máster: Javi, Paloma, Miguel, Alfonso, Pedro, Pablo, Juan, José, Victor,... porque  
+
+
+
+A mis amigos, tanto los que están cerca como los que están lejos.
+\endgroup
+
+
+

@@ -1,0 +1,162 @@
+\myChapter{Redes Sociales, Ciencia Abierta y Difusión}\label{chap:rs}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+La existencia de este breve capítulo en la redacción de esta memoria obedece al desempeño realizado en la difusión de la información relativa al proyecto SIPEsCA en las redes sociales. Si bien parte de la experiencia de publicación en redes sociales ha sido llevada de forma personal por los investigadores del proyecto, en últimas fases de desarrollo del proyecto se realizó la implementación de un agente (o bot) de publicación Twitter.
+
+Este agente permite la publicación en una cuenta de twitter especialmente dedicada a este cometido de la información en tiempo real del estado del tráfico. Sin embargo, la versatilidad y generalidad con la que ha sido diseñado permiten hacer uso de este módulo para la publicación periódica en Twitter de cualquier tipo de contenido que se desee.
+
+Además, se presenta brevemente el concepto de ciencia abierta bajo la cual se ha desarrollado todos los métodos, técnicas y sistemas presentados en este documento.
+
+Por último, se recoge un breve resumen de las apariciones y menciones en prensa relativas al proyecto SIPEsCA.
+
+\section{Redes Sociales} 
+
+Se estima que más del 80\% de los usuarios de internet en España hace uso activo de las redes sociales \cite{redessociales1}, siendo las redes sociales más empleadas Facebook, Tuenti, Twitter y Youtube \cite{redessociales2}. Es por ello que desde las fases más tempranas de desarrollo del proyecto se contempló la posibilidad de integración con dichas redes sociales \footnote{Salvo tuenti, que no fue considerado por tener un público más juvenil e infantil, no potencialmente interesado en el estado del tráfico.}
+
+Si bien sólo se ha realizado un agente para la publicación de forma automática en Twitter, existen mecanismos propios a las redes sociales para compartir la información publicada entre ellas.
+
+\subsection{Twitter}
+
+Se crean dos cuentas de usuario de twitter, la primera de ellas la cuenta \emph{@sipesca} con la información del avance del proyecto así como la redifusión de contenidos relacionados con el tráfico. Se crea adicionalmente la cuenta \emph{traficosipesca} donde se publica de forma regular la información relativa al estado del tráfico en alguna de las zonas donde se encuentran ubicados los nodos.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=12pc]{img/twitter/t1.png}\includegraphics[width=12pc]{img/twitter/t2.png}
+\caption[Tweets publicados de forma automática por el sistema]{Ejemplos de tweets publicados de forma regular y automática por el sistema}
+\end{SCfigure}
+
+Estos tweets hacen uso de un hashtag indicando la zona, por si el usuario desea suscribirse a la información de lugar concreto.
+Además, se ha pensado en la utilización de twitter para la notificación de otro tipo de eventos, siendo el módulo presentando a continuación solo un ejemplo de uso.
+
+\subsubsection{SiMa: Agente de Twitter}
+
+El agente de twitter implementado se basa en una implementación usando la librería de desarrolo de PHP de Twitter \cite{twitterapi} a la cual se le envían peticiones mediante una URL local y privada al servidor desde un módulo de SiMa
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=PHP,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+<?php
+require_once 'lib/twitter.class.php';
+require_once 'lib/config.php';
+$twitter = new Twitter($consumerKey, $consumerSecret, $accessToken, $accessTokenSecret);
+$m = substr($_GET["m"],0,140);
+$m = str_replace("-", "_", $m);
+try {
+	$tweet = $twitter->send($m);
+}catch (TwitterException $e) {
+	echo 'Error: ' . $e->getMessage();
+}
+?>
+\end{lstlisting}
+\caption{Código: Publicación en Twitter: Servicio privado PHP}
+\end{figure}
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+public class TwitterAgente {
+  Config _c = new Config(); Debug _d = new Debug();
+  
+  WebResource _w; Client client;
+
+  public TwitterAgente() {
+  }
+  
+  public void publicar(String m){
+    if(!m.equals("")){
+    	com.sun.jersey.api.client.config.ClientConfig config = new com.sun.jersey.api.client.config.DefaultClientConfig(); // SSL configuration
+    	client = Client.create(config);
+    	Logger.getGlobal().info("Voy a mandar un tweet: "+m);
+    	_w = client.resource( _c.get("twitter.url") + "?m=" + m.replaceAll(" ","%20"));
+  }
+  }  
+}
+\end{lstlisting}
+\caption{Código: Publicación en Twitter: Java}
+\end{figure}
+
+Actualmente la información que se publica está relacionada con la cantidad de dispositivos detectados en un nodo concreto. Para ello se hace uso del módulo de estadísticas que está actualmente en desarrollo. Sólo es necesario conocer que en el proceso de subida de la información a la nube mediante Google Fusion Tables se elige un nodo concreto de forma pseudo-aleatoria y se muestran los dispositivos que se han detectado:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+                TwitterAgente _t = new TwitterAgente();
+
+                _t.publicar(infoNodo_pasoPorHora.prime());
+\end{lstlisting}
+\caption{Código: Publicación en Twitter: Java}
+\end{figure}
+
+Si se desea conocer más sobre este sistema, se invita a ver el código del mismo publicado según veremos en la Sección \ref{sub:sec:github}.
+
+
+\subsection{Facebook}
+
+Se ha querido tener presencia en Facebook replicando la información publicada mediante la cuenta de twitter \emph{@sipesca} de forma automática.
+
+Durante un primer momento, se replicó también la información publicada por la cuenta \emph{@traficosipesca}, sin embargo debido al tráfico generado constamente y a las quejas recibidas se desestimó.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=25pc]{img/fb/fb.png}
+\caption[Página de Facebook del proyecto SIPEsCA]{Página de Facebook del proyecto SIPEsCA}
+\end{SCfigure}
+
+\subsection{Youtube y Google Plus}
+
+Debido a ser de los servicios de publicación vídeos más popular en Internet, se decidió abrir una cuenta para poder publicar los vídeos de ejemplo de las plataformas web y móviles desarrollados.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=25pc]{img/youtube/youtube.png}
+\caption[Página de Youtube del proyecto SIPEsCA]{Página de Youtube del proyecto SIPEsCA}
+\end{SCfigure}
+
+\section{Ciencia Abierta}
+
+Todo el trabajo de implementación presentado en este proyecto se encuentra liberado bajo licencia GNU, por lo cual se permite la libertad de usar, estudiar, compartir y modificar el software.
+
+\subsection{Github}
+\label{sub:sec:github}
+
+El código se encuentra publicado en la forja de código GITHUB \cite{github}, donde se puede encontrar la última versión estable de cada uno de los módulos del sistema, de los servicios web, las plataformas y la aplicación móvil presentados.
+
+\section{Difusión en prensa del proyecto}
+
+A continuación se recogen algunos enlaces publicados en medios tanto digitales como tradicionales sobre el proyecto SIPEsCA.
+\begin{itemize}
+	\item \url{ http://secretariageneral.ugr.es/pages/tablon/*/noticias-canal-ugr/un-nuevo-sistema-informatico-economico-y-facil-de-implantar-permite-conocer-el-trafico-en-tiempo-real-y-con-mayor-precision\#.U2i2CC-x22x }
+	\item \url{ http://www.20minutos.es/noticia/2130778/0/ }
+	\item \url{ http://www.ideal.es/miugr/noticias/nuevo-sistema-informatico-permite-201405061225.html  }
+	\item \url{ http://www.radiogranada.es/2014/05/06/disenan-un-nuevo-sistema-para-conocer-el-trafico-en-tiempo-real/ }
+	\item \url{ http://www.webgranada.com/noticias.asp?modo=ver\&ref=27319 }
+	\item \url{ http://www.europapress.es/andalucia/noticia-nuevo-sistema-informatico-permite-conocer-trafico-tiempo-real-mayor-precision-20140506122258.html }
+	\item \url{ http://www.infocostatropical.com/noticia.asp?id=56601\&id_area=1\&area=portada\&id_seccion=17\&seccion=Provincia }
+	\item \url{ http://www.dicyt.com/noticias/sistema-para-conocer-el-trafico-en-tiempo-real }
+	\item \url{ https://es.cars.yahoo.com/noticias-coches/un-nuevo-sistema-inform\%C3\%A1tico-permite-101200185--spt.html }
+	\item \url{ http://www.autopista.es/noticias-motor/articulo/nuevo-sistema-conocer-estado-trafico-universidad-granada-100482 }
+	\item \url{ Onda Cero Radio (noticias mediodía) }
+	\item \url{ Canal Sur Radio - Hora Sur Mediodía (13:10h) }
+	\item \url{ http://alacarta.canalsur.es/rss/programa/hora-sur-mediodia/220 }
+	\item \url{ http://canal.ugr.es/buscar?searchword=72690\&ordering=newest\&searchphrase=all\&areas[0]=digitales\&areas[1]=impresos }
+	\item \url{ http://www.granadaenlared.com/2014/05/06/un-nuevo-sistema-informatico-economico-y-facil-de-implantar-permite-conocer-el-trafico-en-tiempo-real-y-con-mayor-precision/ }
+	\item \url{ http://www.autocasion.com/actualidad/noticias/156276/un-nuevo-sistema-informatico-permite-conocer-el-trafico-en-tiempo-real/ }
+	\item \url{ http://noticias.lainformacion.com/economia-negocios-y-finanzas/tecnologia-inalambrica/un-nuevo-sistema-informatico-permite-conocer-el-trafico-en-tiempo-real-y-con-mayor-precision_uWeKsk2ednOw6b7rI9TVC1/ }
+	\item \url{ http://www.elboletin.com/hoy-en-la-red/97847/sistema-informatico-conocer-trafico.html }
+	\item \url{ http://elcorreoweb.es/2014/05/06/el-trafico-en-tiempo-real/ }
+	\item \url{ http://www.economiadehoy.com/noticias/tecnologia/65327-un-nuevo-sistema-informatico-economico-y-facil-de-implantar-permite-conocer-el-trafico-en-tiempo-real-y-con-mayor-precision.html }
+	\item \url{ http://www.teleprensa.es/granada/un-nuevo-sistema-informatico-economico-y-facil-de-implantar-permite-conocer-el-trafico-en-tiempo-real.html }
+	\item \url{ http://www.abc.es/motor-reportajes/20140508/abci-sistema-trafico-universidad-granada-201405071401.html }
+	\item \url{ "Cosas que pasan" - Canal Extremadura Radio }
+	\item \url{ http://www.canalextremadura.es/node/95074 minuto 46:21 a 53:30 }
+	\item \url{ La Cope - El programa de Ramón García (a las 16h) }
+	\item \url{ http://www.cope.es/Menu/Podcast/la-tarde/podcast-la-tarde }
+	\item \url{ http://vod.cope.es/audio/2014/05/09/audio_13996505795270376387.mp3 minuto 15:15 a 19:42 }
+	\item \url{ Radio Granada Información - La voz de Granada (a las 17h) }
+	\item \url{ http://www.lavozdegranadaradio.es/ }
+\end{itemize}
+\vfill
+\cleardoublepage

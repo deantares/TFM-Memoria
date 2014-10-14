@@ -1,0 +1,194 @@
+\myChapter{Base de Datos en la Nube: Google Fusion Tables}\label{chap:servidor}
+%\begin{flushright}{\slshape
+%	Call me Ishmael.} \\ \medskip
+%	--- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+
+\clearpage
+
+Si bien usamos una versión muy optimizada de MySQL para el almacenamiento y computo local en lugar de alternativas basadas en modelos de base de datos NoSQL muchos más empleadas en entornos de BigData, no podemos negar que su utilidad y eficiencia para algunas situaciones es muy superior a las ofrecidas por un sistema SQL.
+
+Es por ello, que se decide emplear un gestor de base de datos distinto a MySQL para la publicación de los datos públicos.
+
+De esta manera, el cómputo local se realiza en la base de datos local MySQL muy optimizada para el cómputo, y los datos procesados son almacenados en un sistema NoSQL alojado en la Nube.
+
+Existen una gran cantidad de alternativas noSQL, sin embargo nos decantamos por una solución muy poco conocida de Google: Fusion Tables \cite{fusion1} \cite{fusion2}.
+
+\section{Ventajas de uso de Google Fusion Tables} 
+
+	\subsection{Defición}
+
+		\emph{Google Fusion Tables} es un servicio basado en CLOUD para la administración e integración de datos tabulares potencialmente geolocalizados, el cual provee de diferentes maneras de visualizar, filtrar y procesar los datos almacenados. Soporta integración de datos de múltiples fuentes realizando ``JOINS'' cruzando tablas que pueden pertenecer a usuarios distintos. Este JOIN constituye una vista de datos cruzamos, no un mecanismo de selección en consultas.
+
+		Los usuarios pueden mantener sus datos privados, compartidos con un conjunto de colaboradores o hacer los datos públicos accesibles para cualquier motor de búsqueda.
+
+		\emph{Google Fusion Tables} ofrece también una\texttt{API REST} para administración de las tablas, ventanas de información de las plantillas y estilos de visualización. Ofrece también un sistema de consultas para gestionar las tuplas (insercción, actualización o eliminación) así como realizar selecciones de tuplas basadas en condiciones de datos o geográficos. Dicha consulta puede ser devuelta en CSV, JSON o ser usada de forma nativa por otros entornos de \emph{Google} como \emph{Google Maps} o \emph{Google Chat Tools}. Esta funcionalidad permite una rápida y transparente representación y publicación de los datos.
+
+	\subsection{Beneficios de uso}
+
+	En esa sección se recoge a modo de sumario algunas de las características y ventajas que justifican el uso de esta plataforma.
+
+	\subsubsection*{Uso de datos públicos}
+Fusion Tables permite la búsqueda entre miles de tablas alojadas en Fusion Tables, o entre millones de tablas existentes en la web que se pueden importar en Fusion Tables. De igual manera, si se desea, se puede hacer que todos los datos alojados en Fusion Tables sean accesibles de forma pública.
+
+\subsubsection*{Importar tus propios datos}
+Ya sea mediante la subida de un fichero CSV, una hoja de cálculo o un fichero KML, o bien mediante el uso de la API REST que permite insertar, actualizar, eliminar y realizar consultas de forma programada, con Fusion Tables se puede subir los datos de forma rápida y sencilla a la nube.
+
+\subsubsection*{Visualizar de forma instantánea}
+De forma inmediata, una vez los datos han sido importados, se pueden visualizar los datos en gráficos o establecer una geolocalización en un mapa. Además, se pueden realizar filtros para visualizaciones más selectivas.
+
+\subsubsection*{Publicación inmediata}
+Cualquier gráfico o mapa realizado puede ser embebido vía WEB o enviado vía correo electrónico, mostrando siempre los valores actualizados de la base de datos, sin tener que realizar ningún trámite adicional.
+
+\subsubsection*{Cotejar datos con otras bases de datos }
+Si alguien tiene de datos diferentes sobre la misma entidad de datos o si se dispone los datos en distintas tablas, con Fusion Tables se puede cotejar los datos, haciendo un JOIN transparente entre ambas tablas, lo que generará una nueva vista.
+
+\subsubsection*{Siempre actualizados}
+Cuando alguna de las bases de datos es actualizada (ya sea modificación o inserción de nuevos datos) las tablas cotejadas se actualizan de forma automática y transparente.
+
+\subsubsection*{Compartir sólo los datos deseados}
+Si se necesita mantener alguno de los datos, se permite compartir sólo un conjunto de columnas de la tabla principal, que estará siempre actualizados respecto a la tabla original, pero con sus propios permisos de publicación.
+
+\subsubsection*{Constante autoría de los datos}
+Fusion Tables permite mantener de forma constante de donde provienen los datos y a quien pertenecen. Tanto durante la importación y la visualización se muestran la autoría de los datos. Incluso si las tablas son mezcladas, se seguirá manteniendo la autoría de los datos originales, y así será mostrado.
+
+\subsubsection*{Geolocalización transparente de los datos}
+Ya sean datos expresados en puntos, líneas, polígonos, direcciones, nombre de lugares, países o cualquier registro susceptible de almacenar datos geográficos, es automáticamente interpretado y geolocalizado en un mapa.
+
+\subsubsection*{Personalización de los mapas}
+Aplicar colores o iconos basados en los datos. Hacer mapas de intensidades basadas en zonas. Usar polígonoss KML para el dibujado sobre el mapa. Mostrar miles de trazas al mismo tiempo. 
+
+\subsubsection*{Compartir el mapa}
+Los mapas generados con Fusion Tables pueden ser embebidos en cualquier WEB, enviados mediante correo electrónico, ser salvado como un fichero KML para ser visto en cualquier software de geolocalización, o incluso usar Fusion Tables para la generación dinámica de KML ofrecidos como enlaces para mantener siempre un enlace al mapa constantemente actualizado.
+
+\subsubsection*{Alta accesibilidad web}
+Fusion tables permite almacenar los datos y ofrecer un portal donde los usuarios puedan visualizar los datos sin necesidad de descargarlos. Pueden explorar los mapas, gráficos, realizar cálculos sobre ellos o hacer búsquedas y filtros sobre los datos para su posterior descarga. O si se desea, se puede impedir la descarga de los datos, permitiendo sólo su visualización ONLINE.
+
+\subsubsection*{Difusión de los datos actualizados y de forma segura}
+En lugar de mantener miles de copias de los datos en diversos discos duros locales, los datos en Fusion Tables están siempre actualizados y seguros, mostrando siempre los últimos datos en todas las gráficas y mapas que han sido generadas de forma automática.
+
+\subsubsection*{Posibilidades de expansión mediante la API}
+Cuando los datos se almacenan en Fusion Tables, se ofrece de forma automática una API para que los desarrolladores puedan acceder a los datos mediante REST. Ofertando tanto una forma pública (basa en token) como un sistema autenticado basado en oAuth. Únicamente mediante el sistema autenticado se podrá alterar los datos (modificar, eliminar, insertar,..)
+
+\section{Google Fusion Tables}
+
+En esta sección se describirán aspectos más técnicos sobre Google Fusion Tables, con el fin de comprender el funcionamiento interno de la plataforma.
+
+	\subsection{Arquitectura y almacenamiento de datos}
+
+Es necesario explicar (de forma breve) la arquitectura de Fusion Tables y el sistema de almacenamiento de los datos. Primero se describen los elementos de la pila de almacenamiento (Storage Stack) sobre los que se construye Fusion Tables: Bigtable y Megastore.
+
+A continuación, se describe como se almacena en dicha estructura todas las tuplas de todas las tablas del usuario en una sola tabla Bigtable y todo el esquema en otra tabla Bigtble.
+
+		\subsubsection{Arquitectura}
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=20pc]{img/almacenamiento/ft_arquitectura.png}
+\caption{Arquitectura de almacenamiento de Google Fusion Tables}
+\label{fig:ft_almacenamiento}
+\end{SCfigure}
+
+En la Figura \ref{fig:ft_almacenamiento} se muentran los principales componentes arquitectónicos del servicio Fusion Tables. Las peticiones pueden ser originadas desde diversas fuentes:
+
+\begin{itemize}
+\item La vista web de Google Fusion Tables
+\item La API REST de comunicación
+\item Visualizaciones embebidas soportadas de forma nativa
+	\begin{itemize}
+	\item Un mapa de Google Maps
+	\item Un gráfico de Google Chart
+	\end{itemize}
+\end{itemize}
+
+Todas son procesadas igualmente, con la salvedad de las peticiones sobre mapas, que se generan mediante consultas espacio/estructurales planificadas sobre las tablas del sistema. Es decir, se utilizan las coordenadas de visualización del mapa para la obtención de ``imágenes'' que serán geolocalizadas en el mapa con la información resultante.
+
+En el resto de casos, el FrontEnd convierte las peticiones (query) de las distintas fuentes a una representación común, y lo envía al módulo de procesamiento de consultas (Query Processing Module) que genera una planificación para la consulta (Query Plan).
+
+Dicho plan es ejecutado por el Back End haciendo uso de un conjunto síncrono y replicado de servidores de almacenamiento Big Table. El principal reto para la capa de almacenamiento, por tanto, es tratar con multitud de tablas, con diversidad de esquemas tamaños y naturaleza de las consultas.
+
+		\subsubsection{Pila de almacenamiento}
+
+		Fusion Tables se construye sobre dos capas distintas dentro de la infraestructura de almacenamiento de Google:
+
+		\emph{Big Table}
+
+		Las tuplas almacenadas dentro de una estructura Big Table son de tipo \{clave,valor\}, las cuales se encuentran ordenadas en función de la clave y distribuidos por rangos (de la propia clave) en múltiples servidores. El valor, puede ser cualquier estructura compleja formada por valores atómicos permitidos.
+
+		El entorno BigTable provee de un única operación de escritura que inserta una tupla de forma atómica, esto es, en tiempo constante y sin posibilidad de interrupción.
+
+		Se provee también de tres mecanismos de lectura:
+
+		\begin{itemize}
+			\item Búsqueda por clave (Lookup by key) donde para una clave identificada se devuelve el valor asociado a dicha clave.
+			\item Búsqueda por prefijo de clave (Lookup by key prefix) donde se devuelve los valores para los cuales el comienzo de su clave comienza con el prefijo buscado.
+			\item Búsqueda por rango de clave {Lookup by key range} donde se devuelve los valores comprendidos entre las dos claves especificadas.
+		\end{itemize}
+
+		Además, el entorno BigTable almacena un sello de tiempo histórico (timestamp) para cada tupla. Así se podría entender una tupla como el conjunto \{clave,valor,marcaDeTiempo\}, siendo la marca de tiempo el instante en el que ha sido escrito. Esto es debido a que el sistema permite almacenar tuplas con claves coincidentes.
+
+		\emph{Megastore}
+
+		Megastore es un conjunto de librerías situadas por encima de BigTable. En ellas se provee de primitivas de alto nivel, como índices secundarios (Seccion \ref{sec:ft:queryprocessing}), transiciones sobre múltiples tuplas (Sección \ref{sec:ft:transactions})  y replicaciones entre diversos servidores conservando la consistencia.
+
+		\subsubsection{Almacenamiento de tuplas: Row Store}
+
+		En Fusion Tables, todas las tablas de un usuario son almacenadas en una única tabla BigTable de nombre \emph{Rows} (filas o tuplas). Cada tupla dentro de dicha tabla pertenece a una tupla en una tabla concreta del usuario. La clave empleada para la tupla, es la concatenación del identificador de la tabla y el identificador de la fila. Dicho identificador de fila es gestionada de forma interna y transparente para el usuario, que no necesita definir una ``clave primaria'' para su tabla.
+
+		\subsubsection{Almacenamiento de esquemas: Schema Store}
+
+		Para almacenar los esquemas de las tablas se hace uso de otra tabla BigTable, con una tupla por cada tabla almacenada en el sistema. El valor de la clave, es el identificador de la tabla.
+
+		En el valor, se almacenan las columnas y permisos para cada tabla. De cada columna se almacena el nombre y el tipo de dato preferente. En los permisos, se almacenan los usuarios asociados a sus diversos permisos sobre la tabla. Las tablas públicas constante de un registro especial indicando que son visibles por todo el mundo.
+
+		Con este sistema, se permite que el esquema de una tabla pueda evolucionar con el tiempo, pudiendo los usuarios añadir y eliminar columnas sobre sus datos.
+
+		\subsubsection{Almacenamiento de vistas: View Store}
+
+		Una de las principales funcionalidades de Fusion Tables es que permite que múltiples usuarios puedan cotejar sus datos ``uniendo'' sus tablas en una sola, incluso si dichas tablas pertenecen a usuarios distintos o incluso a usuarios terceros. Una tabla construida mediante uniones de tablas se denomina una vista, y dispone de un almacenamiento virtual. Esto es, las vistas no son almacenadas en la BigTable Rows de ninguno de los usuarios, solo se almacena su definición y permisos en la BigTable Schema. Las vistas tienen sus propios permisos, de igual manera que las tablas de usuarios.
+
+		\subsubsection{Almacenamiento de comentarios: Comment Store}
+
+		Para facilitar las colaboraciones, Fusion Tables permite los comentarios tanto de tablas, tuplas, columnas o celdas individuales. Todos los comentarios son almacenados en una tabla BigTable, donde la clave es el elemento comentado y el valor es el comentario.
+
+	\subsection{Procesado de consultas}
+	\label{sec:ft:queryprocessing}
+
+Fusion Tables se encuentra limitado a las primitivas de lectura que ofrece BigTable para dar soporte a un conjunto limitado de consultas SQL. Actualmente el sistema soporta selecciones (\texttt{SELECT}) sobre los valores de cualquier columna; así como agregaciones (\texttt{GROUP BY}) y uniones (\texttt{JOINS}) basados en la clave primaria. 
+
+La estrategia de ejecución de consultas se basa en traducir la consulta a procesar en un conjunto de las tres operaciones soportadas por las tablas BigTable presentadas anteriormente.
+
+	\subsection{Transacciones}
+	\label{sec:ft:transactions}
+
+	Fusion Tables está diseñado como una plataforma para el almacenamiento y gestión de datos con un fuerte carácter orientado a la colaboración y visualización de los datos de forma estructurada. Debido a ello que no se encuentra diseñado para ser un sistema de alto rendimiento en la transición y procesamiento de los datos. Esta naturaleza de Fusion Tables es la que nos hace mantener el doble sistema de almacenamiento presentado en este apartado.
+
+	El entorno MySQL anteriormente presentado y muy optimizado para el procesamiento y transición de datos; y el entorno Fusion Tables, más orientado a la visualización, representación y compartición de los datos.
+
+	\subsection{Visualización de los datos}
+
+	Como se ha repetido en numerosas ocasiones en este capítulo, uno de los principales potenciales de Fusion Tables es su capacidad de representar los datos inmediatamente se encuentran alojados en el servicio. El conjunto de visualizaciones permitidas para un conjunto de datos concreto es definido en función de los tipos de datos alojados en la tabla y los tipos requeridos para cada visualización.
+
+	Por ejemplo, para la visualización de un ``nube de puntos" es necesario que existan dos variables numéricas (una para eje de la gráfica). De manera simular, para poder representar los datos en un mapa, es necesario que la tupla se encuentre geolocalizada.
+
+	\subsection{Características geolocalizadas}
+
+	Uno de las grandes bazas de Fusion Tables, es su capacidad para trabajar con grandes conjuntos de datos geolocalizados. La forma de geolocalizar un dato, es mediante la inclusión en la tupla de una columna con información geográfica. Ya sea una mediante una dirección o unas coordenadas. Las coordenadas pueden estar asociadas a un punto, una línea o un polígono.
+
+	Fusion Table renderiza en el lado del servidor toda la información geográfica como una capa, dejando al cliente la tarea de representarla. De esta forma el grueso del cómputo es realizado por el servidor, resultando mucho más ligero para el cliente, lo cual facilita la implementación de clientes en dispositivos de sin grandes necesidades de cómputo, como dispositivos móviles.
+
+	\subsection{Integración con aplicaciones de terceros}
+
+	Para terminar, un aspecto de vital importancia de Fusion Tables es la capacidad de extender la funcionalidad básica de la plataforma gracias a su API. Esta API permite a desarrolladores externos de Google (como nosotros) escribir aplicaciones que hace uso de Fusion Tables como base de datos. 
+
+	Esta API se describirá en detalle en el capítulo \ref{chap:apirest}.
+
+
+	\section{Uso de Fusion Tables en el Proyecto}
+
+	Fusion Tables es elegido por tanto como entorno para la publicación de los datos en la Nube, lo que permite ofrecer la información calculada por el sistema visto en el Capítulo \ref{chap:actualizadorlocal} en un entorno Web. Además, debido a su API de comunicación, es posible realizar un módulo encargado de la sincronización automática de la información en la nube a medida que se va calculando en el servidor local. Este sistema será descrito en detalle en el Capítulo \ref{chap:actualizadorFusionTables}.
+
+\vfill
+\cleardoublepage

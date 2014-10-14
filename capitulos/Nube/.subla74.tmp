@@ -1,0 +1,66 @@
+\myChapter{Desarrollo Web y Móvil}\label{chap:web}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+En los anteriores capítulos hemos mostrado el sistema de subida de datos a la Nube Goolge Fusion Tables así como la API REST que nos permite acceder a los datos desde aplicaciones de terceros. Adicionalmente a esta API, se han desarrollado varios servicios Web que permite la creación de mecanismos avanzados para la cración de tablas, gráficos y mapas embebidos.
+
+Sobre estos servicios se ha desarrollado varias plataformas web que permite la difusión de los datos: una página principal de información general sobre el proyecto, un panel de visualización de los datos, un visor de eventos. Adicionalmente se presenta el panel de administración de los datos de Google Fusion Tables, que permite la gestión de los datos y su autoría.
+
+Por último, se presenta la aplicación móvil desarrollada en Android usando tecnología HTML. 
+
+\section{Servicios Web} 
+
+Si bien disponemos de una API REST para el acceso y manipulación de los datos alojado en la nube, se ha desarrollado una capa de Servicios Web que hace uso de dicha API para crear elementos de representanción de datos. Al hacerlo mediante una capa externa, en lugar de gestionarlo en la propia aplicación, se consigue un entorno uniforme y modular. Una actualización en un servicio web, implica que todas las demás plataformas y servicios que hacen uso de dicho servicio tengan al instante la mejora o nueva funcionalidad.
+
+Además, se consigue consolidar una imagen y mecánicas de uso comunes a todos las plataformas de forma fácil y sencilla.
+
+A continuación, se presentan los 3 tipos de visualización básicos empleados, mostrando para cada uno algunos ejemplos de código así como capturas de pantalla y explicaciones de la funcionalidad.
+
+\subsection{Tablas}
+
+La forma más básica de representar información es mediante una estructura tabular. Se provee de un servicio web básico capaz de procesar una consulta SQL en una tabla HTMl. Parte del código de dicho servicio se puede encontrar en la Figura \ref{fig:ejemploUsoFusionTables-Tabla}.
+
+Se ha creado una capa Javascript por encima de la tabla HTML para dotarle de funcionalidad adicional no nativa, como la posibilidad de aplicar filtros, búsqueda y ordenación por columnas
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=26pc]{img/web/sw-tabla.png}
+\caption{Representación en modo de tabla de los datos}
+\end{SCfigure}
+
+Se hace necesario destacar que la petición de información y procesamiento de la tabla es realizado en el lado del cliente, al estar realizada enteramente en Javascript.
+
+\subsection{Gráficos}
+
+Si bien una tabla puede servir para el análisis de los datos, estos adquieren mayor vistosidad en un gráfico. Debido a la facilidad de integración de Google Fusion Tables con Google Chart, es posible realizar gráficos de forma rápida y muy vistosa.
+
+Se proveen
+
+\subsection{Histórico: serie temporal}
+
+\subsection{Mapas}
+
+
+
+\section{Plataformas Web}
+
+\subsection{Página principal: Wordpress}
+
+\subsection{Visor de eventos online}
+
+\subsection{Panel de control}
+
+\subsection{Panel de Administración de Google Fusion Table}
+
+\section{Aplicación Móvil}
+
+\subsection{Optimizaciones}
+
+
+\vfill
+\cleardoublepage

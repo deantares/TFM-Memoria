@@ -1,0 +1,128 @@
+%*******************************************************
+% Table of Contents
+%*******************************************************
+%\phantomsection
+\refstepcounter{dummy}
+\pdfbookmark[1]{\contentsname}{tableofcontents}
+\setcounter{tocdepth}{2}
+\dominitoc
+\tableofcontents
+%\markboth{\spacedlowsmallcaps{\contentsname}}{\spacedlowsmallcaps{\contentsname}}
+\markboth{\textsc{\contentsname}}{\textsc{\contentsname}}
+%*******************************************************
+% work-around to have small caps also here in the headline
+% will not work at this place if the TOC has more than 2 pages
+% use \manualmark and then the \markboth as above
+% later a modification of \automark[section]{chapter}
+%*******************************************************
+% List of Figures and of the Tables
+%*******************************************************
+\clearpage
+
+\begingroup
+    \let\clearpage\relax
+    \let\cleardoublepage\relax
+    \let\cleardoublepage\relax
+    %*******************************************************
+    % List of Figures
+    %*******************************************************
+    %\phantomsection
+    \refstepcounter{dummy}
+    %\addcontentsline{toc}{chapter}{\listfigurename}
+    \pdfbookmark[1]{\listfigurename}{lof}
+
+    \clearpage
+
+    \listoffigures
+
+    \vspace*{8ex}
+    \clearpage
+
+    %*******************************************************
+    % List of Tables
+    %*******************************************************
+    %\phantomsection
+    \refstepcounter{dummy}
+    %\addcontentsline{toc}{chapter}{\listtablename}
+    \pdfbookmark[1]{\listtablename}{lot}
+    \listoftables
+
+    \vspace*{8ex}
+%   \newpage
+    \clearpage
+
+    %*******************************************************
+    % List of Listings
+    %*******************************************************
+%   %\phantomsection
+%   \refstepcounter{dummy}
+%   %\addcontentsline{toc}{chapter}{\lstlistlistingname}
+%   \pdfbookmark[1]{\lstlistlistingname}{lol}
+%   \lstlistoflistings
+
+    %*******************************************************
+    % Acronyms
+    %*******************************************************
+    %\phantomsection
+    \refstepcounter{dummy}
+    \pdfbookmark[1]{Acr{\'o}nimos}{acr{\'o}nimos}
+    \chapter*{Acr{\'o}nimos}
+    \begin{acronym}[CSCW]
+        \acro{API}{Application Programming Interface}
+        \acro{EA}{Evolutionary Algorithm}
+        \acro{JSON}{JavaScript Object Notation}
+        \acro{OAUTH}{Open Authorization}
+        \acro{RAID}{Redundant Array of Independent Disks}
+        \acro{REST}{Representational State Transfer}
+        \acro{WEKA}{Waikato Environment for Knowledge Analysis}
+        \acro{XML}{eXtensible Markup Language}
+
+        \acro{MAE}{Mean Absolute Error}
+        \acro{RMSE}{Root mean squared error}
+        \acro{MAPE}{Mean absolute percentage error}
+        \acro{RRSE}{Root relative squared error}
+        \acro{RAE}{Relative absolute error}
+        \acro{DA}{Direction accurracy}
+        \acro{MSE}{Mean squared error}
+
+ %    \acro{AdSi}{Adaptive Size}
+ %
+ %    \acro{CPU}{Central Processing Unit}
+	% 
+ %    \acro{EC}{Evolutionary Computation}
+ %    \acro{EP}{Evolutionary Programming}
+	% \acro{ES}{Evolutionary Strategy}
+ %    \acro{GA}{Genetic Algorithm}
+ %    \acro{GP}{Genetic Programming}
+ %    \acro{HeHa}{Heterogeneous Hardware}
+ %    \acro{HoHa}{Homogeneous Hardware}
+ %    \acro{HeSi}{Heterogeneous Size}
+ %    \acro{HoSi}{Homogeneous Size}
+ %    \acro{IDE}{Integrated Development Environment}
+	% \acro{MMDP}{Massive Multimodal Deceptive Problem}
+	% \acro{OSGi}{Open Service Gateway Initiative}
+ %
+ %    \acro{RTS}{Real Time Strategy}
+	% \acro{SOA}{Service Oriented Architecture}
+ %    \acro{SOAP}{Simple Object Access Protocol}
+ %    \acro{SOEA}{Service Oriented Evolutionary Algorithm}
+ %    \acro{UDDI}{Universal Description, Discovery and Integration}
+ %    \acro{URL}{Uniform Resource Locator}
+ %    \acro{VM}{Virtual Machine}
+ %    \acro{WSDL}{Web Services Description Language}
+ %    
+    \end{acronym}
+
+    \pdfbookmark[1]{T{\'e}rmimos empleados}{t{\'e}rmimos empleados}
+    \chapter*{T\'erminos empleados en este documento}
+    \begin{acronym}[CSCW]
+        \acro{nodo}{Sistema remoto de bajo coste de adquisición de paso de vehículos. Dispone de una posición geógrafica y un tipo de sensor de adquisición}
+        \acro{dispositivo}{Un dispositivo es un vehículo, persona o ente con un identificador único que es almacenado en el sistema}
+        \acro{paso}{Captación de un nodo de un dispositivo en un instante de tiempo concreto}
+        \acro{SiMa}{Nombre bajo el que se engloba todo el entramado software desarrollado para el proyecto SIPEsCA para el procesamiento local, predicción y publicación en la nube}
+    \end{acronym}
+
+
+\endgroup
+
+\cleardoublepage 

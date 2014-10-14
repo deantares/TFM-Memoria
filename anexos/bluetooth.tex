@@ -1,0 +1,269 @@
+\myChapter{Bluetooth}\label{chap:bluetooth}
+\minitoc\mtcskip
+\vfill
+
+En este capítulo se describen los campos que identifican a un dispositivo bluetooth \cite{IEEEBT,WikiOUI}.
+
+Cada dispositivo Bluetooth incorpora en la cabecera de nivel de Banda Base (Baseband 1.1) de sus paquetes un campo Class of Device/Service. Este campo se compone de 3 octetos organizados con el siguiente formato (en little endian):
+
+\begin{itemize}
+\item 11 últimos bits reservados para ServiceClasses
+\item 11 siguientes bits reservados para DeviceClasses
+\begin{itemize}
+  \item 6 últimos bits reservados para MajorDeviceClasses
+  \item 5 siguientes bits reservados para MinorDeviceClasses
+\end{itemize}
+\item 2 primeros bits para el campo Format Type, por defecto 0
+\end{itemize}
+
+
+\section{Service Class: Clase de servicio}
+
+El campo reservado para las Service Classes permite identificar los servicios soportados por el dispositivo. Este campo se compone de 11 bits, del 13 al 23. Cada servicio Bluetooth está asociado a un bit en concreto, de forma que si un determinado bit del campo está a 1, entonces el dispositivo soporta ese servicio Bluetooth. La correspondencia entre nº de bit y servicio se recoge en la siguiente tabla:
+
+\begin{table}[H]
+\begin{tabular}{|c|c|}
+\hline 
+Bit & Major Service Class\tabularnewline
+\hline 
+\hline 
+13 & Limited Discoverable Mode\tabularnewline
+\hline 
+14 & (reserved)\tabularnewline
+\hline 
+15 & (reserved)\tabularnewline
+\hline 
+16 & Positioning (Location identification)\tabularnewline
+\hline 
+17 & Networking (LAN, Ad hoc, ...)\tabularnewline
+\hline 
+18 & Rendering (Printing, Speaker, ...)\tabularnewline
+\hline 
+19 & Capturing (Scanner, Microphone, ...)\tabularnewline
+\hline 
+20 & Object Transfer (v-Inbox, v-Folder, ...)\tabularnewline
+\hline 
+21 & Audio (Speaker, Microphone, Headset service, ...)\tabularnewline
+\hline 
+22 & Telephony (Cordless telephony, Modem, Headset service, ...) \tabularnewline
+\hline 
+23 & Information (WEB-server, WAP-server, ...) \tabularnewline
+\hline 
+\end{tabular}
+\caption{Anexo: Bluetooth - Clases de servicio}
+\end{table}
+
+\section{Clases de dispositivo}
+
+El campo reservado para las Device Classes permite identificar la naturaleza del dispositivo. Este campo se compone 2 subcampos: Major Device Classes y Minor Device Classes
+
+\subsection{Major Device Class}
+
+
+El campo reservado para las Major Device Classes permite identificar el tipo genérico de dispositivo. Este campo se compone de 5 bits, del 8 al 12. Cada tipo genérico de dispositivo está asociado a una representación concreta de bits dentro del campo. La correspondencia entre bits y tipos genéricos de dispositivos se recoge en la siguiente tabla:
+Citar
+
+\begin{table}[H]
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline 
+12 & 11 & 10 & 9 & 8 & Major Device Class \tabularnewline
+\hline 
+\hline 
+ 0 & 0 & 0 & 0 & 0 & Miscellaneous \tabularnewline
+\hline 
+ 0 & 0 & 0 & 0 & 1 & Computer (desktop,notebook, PDA, organizers, .... ) \tabularnewline
+\hline 
+ 0 & 0 & 0 & 1 & 0 & Phone (cellular, cordless, payphone, modem, ...) \tabularnewline
+\hline 
+ 0 & 0 & 0 & 1 & 1 & LAN /Network Access point \tabularnewline
+\hline 
+ 0 & 0 & 1 & 0 & 0 & Audio/Video (headset,speaker,stereo, video display, ...) \tabularnewline
+\hline 
+ 0 & 0 & 1 & 0 & 1 & Peripheral (mouse, joystick, keyboards, ...) \tabularnewline
+\hline 
+ 0 & 0 & 1 & 1 & 0 & Imaging (printing, scanner, camera, display, ...) \tabularnewline
+\hline 
+ 0 & 0 & 1 & 1 & 1 & Wearable (complemento que puedes llevar puesto) \tabularnewline
+\hline 
+ 0 & 1 & 0 & 0 & 0 & Toy (Juguete) \tabularnewline
+\hline 
+ 1 & 1 & 1 & 1 & 1 & Uncategorized, specific device code not specified \tabularnewline
+\hline 
+ X & X & X & X & X & All other values reserved  \tabularnewline
+\hline 
+\end{tabular}
+\caption{Anexo: Bluetooth - Major Device Class}
+\end{table}
+
+\subsection{Minor Device Classes}
+
+El campo reservado para las Minor Device Classes permite identificar el tipo específico de dispositivo. Este campo se compone de 6 bits, del 7 al 2. Cada tipo específico de dispositivo está asociado a una representación concreta de bits dentro del campo. La correspondencia entre bits y tipos específicos de dispositivos, dentro de cada tipo genérico, se recoge en la siguientes tablas:
+
+\subsubsection{Phone Major Class}
+\begin{table}[H]
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+7 & 6 & 5 & 4 & 3 & 2 & Minor Device Class \tabularnewline
+\hline 
+\hline 
+0 & 0 & 0 & 0 & 0 & 0 & Uncategorized, code for device not assigned \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 0 & 1 & Cellular \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 1 & 0 & Cordless \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 1 & 1 & Smart phone \tabularnewline
+\hline 
+0 & 0 & 0 & 1 & 0 & 0 & Wired modem or voice gateway \tabularnewline
+\hline 
+0 & 0 & 0 & 1 & 0 & 1 & Common ISDN Access \tabularnewline
+\hline 
+X & X & X & X & X & X & All other values reserved \tabularnewline
+\hline 
+\end{tabular}
+\caption{Anexo: Bluetooth - Phone Major Class}
+\end{table}
+
+\subsubsection{Audio/Video Major Class}
+\begin{table}[H]
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline 
+7 & 6 & 5 & 4 & 3 & 2 & Minor Device Class \tabularnewline
+\hline 
+\hline 
+0 & 0 & 0 & 0 & 0 & 0 & Uncategorized, code for device not assigned \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 0 & 1 & Wearable Headset Device \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 1 & 0 & Hands-free Device \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 1 & 1 & (Reserved) \tabularnewline
+\hline 
+0 & 0 & 0 & 1 & 0 & 0 & Microphone \tabularnewline
+\hline 
+0 & 0 & 0 & 1 & 0 & 1 & Loudspeaker \tabularnewline
+\hline 
+0 & 0 & 0 & 1 & 1 & 0 & Headphones \tabularnewline
+\hline 
+0 & 0 & 0 & 1 & 1 & 1 & Portable Audio \tabularnewline
+\hline 
+0 & 0 & 1 & 0 & 0 & 0 & Car audio \tabularnewline
+\hline 
+0 & 0 & 1 & 0 & 0 & 1 & Set-top box \tabularnewline
+\hline 
+0 & 0 & 1 & 0 & 1 & 0 & HiFi Audio Device \tabularnewline
+\hline 
+0 & 0 & 1 & 0 & 1 & 1 & VCR \tabularnewline
+\hline 
+0 & 0 & 1 & 1 & 0 & 0 & Video Camera \tabularnewline
+\hline 
+0 & 0 & 1 & 1 & 0 & 1 & Camcorder \tabularnewline
+\hline 
+0 & 0 & 1 & 1 & 1 & 0 & Video Monitor \tabularnewline
+\hline 
+0 & 0 & 1 & 1 & 1 & 1 & Video Display and Loudspeaker \tabularnewline
+\hline 
+0 & 1 & 0 & 0 & 0 & 0 & Video Conferencing \tabularnewline
+\hline 
+0 & 1 & 0 & 0 & 0 & 1 & (Reserved) \tabularnewline
+\hline 
+0 & 1 & 0 & 0 & 1 & 0 & Gaming/Toy \tabularnewline
+\hline 
+X & X & X & X & X & X & All other values reserved \tabularnewline
+\hline 
+\end{tabular}
+\caption{Anexo: Bluetooth - Audio/Video Major Class}
+\end{table}
+
+\subsubsection{Peripheral Major Class}
+\begin{table}[H]
+\begin{tabular}{|c|c|c|}
+\hline
+7 & 6 & Minor Device Class \tabularnewline
+\hline 
+\hline 
+0 & 0 & Other (Joystick, Gamepad, Remote control, ...) \tabularnewline
+\hline 
+0 & 1 & Keyboard \tabularnewline
+\hline 
+1 & 0 & Pointing device \tabularnewline
+\hline 
+1 & 1 & Combo keyboard/pointing device \tabularnewline
+\hline 
+\end{tabular}
+\caption{Anexo: Bluetooth - Peripheral Major Class}
+\end{table}
+
+
+\subsubsection{Imaging Major Class}
+\begin{table}[H]
+\begin{tabular}{|c|c|c|c|c|}
+\hline 
+7 & 6 & 5 & 4 & Minor Device Class \tabularnewline
+\hline 
+\hline 
+X & X & X & 1 & Display \tabularnewline
+\hline 
+X & X & 1 & X & Camera \tabularnewline
+\hline 
+X & 1 & X & X & Scanner \tabularnewline
+\hline 
+1 & X & X & X & Printer \tabularnewline
+\hline 
+X & X & X & X & All other values reserved \tabularnewline
+\hline 
+\end{tabular}
+\caption{Anexo: Bluetooth - Imaging Major Class}
+\end{table}
+
+\subsubsection{Wereable Major Class}
+\begin{table}[H]
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline 
+7 & 6 & 5 & 4 & 3 & 2 & Minor Device Class \tabularnewline
+\hline 
+\hline 
+0 & 0 & 0 & 0 & 0 & 0 & Uncategorized, code for device not assigned \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 0 & 1 & Wrist Watch \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 1 & 0 & Pager \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 1 & 1 & Jacket \tabularnewline
+\hline 
+0 & 0 & 0 & 1 & 0 & 0 & Helmet \tabularnewline
+\hline 
+0 & 0 & 0 & 1 & 0 & 1 & Glasses \tabularnewline
+\hline 
+X & X & X & X & X & X & All other values reserved \tabularnewline
+\hline 
+\end{tabular}
+\caption{Anexo: Bluetooth - Wereable Major Class}
+\end{table}
+
+
+
+\subsection{Toy Major Class}
+\begin{table}[H]
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline 
+7 & 6 & 5 & 4 & 3 & 2 & Minor Device Class \tabularnewline
+\hline 
+\hline 
+0 & 0 & 0 & 0 & 0 & 0 & Uncategorized, code for device not assigned \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 0 & 1 & Robot \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 1 & 0 & Vehicle \tabularnewline
+\hline 
+0 & 0 & 0 & 0 & 1 & 1 & Doll / Action Figure \tabularnewline
+\hline 
+0 & 0 & 0 & 1 & 0 & 0 & Controller \tabularnewline
+\hline 
+0 & 0 & 0 & 1 & 0 & 1 & Game \tabularnewline
+\hline 
+X & X & X & X & X & X & All other values reserved  \tabularnewline
+\hline 
+\end{tabular}
+\caption{Anexo: Bluetooth - Toy Major Class}
+\end{table}

@@ -1,0 +1,40 @@
+\myChapter{Predicción Online}\label{chap:predicciononline}
+\begin{flushright}{\slshape
+    Call me Ishmael.} \\ \medskip
+    --- {Herman Melville, Moby-Dick; or, The Whale}
+\end{flushright}
+\minitoc\mtcskip
+\vfill
+
+\clearpage
+
+En el anterior capítulo hemos presentado distintas técnicas para la predicción de series temporales, pero dichas técnicas han sido realizadas ``offline'', es decir, con series temporales extraidas del sistema, y sin introducir sus valores predichos al sistema.
+
+En este capítulo presentamos el módulo de predicción implementado para el sistema SiMa, que permite realizar predicciones ``online'', lo que implica que las predicciones se realizan a medida que se recogen los datos en el sistema. Además, se adelantará el sistema de subida en la nube mediante fusion tables para su publicación. El módulo de subida de datos a la nube será presentado en el Capítulo \ref{chap:actualizadorFusionTables}. Para la comprensión de este capítulo sólo es necesario adelantar que dicho módulo dispone de métodos que permiten trabajar de forma nativa con las tablas alojadas en Google Fusion Tables, permitiendo la realización de funciones típicas de SQL.
+
+\section{Software empleado}
+
+A la hora de hacer uso de cualquier técnica de predicción existente en la bibliografía, existen dos alternativas. La primera para por la implementación del método, el cual tiene que estar lo suficientemente documentado para poder permitir una reproducción de la implemenación, lo cual no suele ser lo común, presentándose los métodos únicamente desde el punto de vista del modelo matemático.
+
+La otra alternativa para por emplear algún paquete de software con implementaciones muy eficientes y probadas de métodos clásicos de predicción. En nuestro caso, se optó por probar dos paquetes de software para prediccióm.
+
+Cómo primera al
+
+\subsection{R}
+
+\subsection{Weka}
+
+\section{SiMa: Módulo de Predicción}
+
+\subsection{Carga de datos}
+
+\subsection{Construcción del modelo de predicción}
+
+\subsection{Publicación}
+
+\subsection{Controlador del Módulo}
+
+Hola mundo
+
+\vfill
+\cleardoublepage

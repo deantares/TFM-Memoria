@@ -1,0 +1,256 @@
+\myChapter{SiMa: Mecanismos de Depuraci\'on}\label{chap:depuracion}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+En un sistema complejo, proveer los mecanismos de depuración adecuados es de vital importancia. Aún más, cuando se trata de un sistema que procesa los datos Tiempo Real, en el que la reproducción de erorres es prácticamente imposible. Además, su naturaleza 24/7 obliga a capturar de forma eficiente los errores, pues no se dispone de un operador que compruebe constantemente la correcta ejecución del entorno.
+
+En este capítulo se describe el módulo de depuración, que ha sido de vital importancia para la depuración y correcto funcionamiento de todo el sistema. Sin el diseño y uso de un sistema de depuración la detección de anomalías hubiese sido imposible, comprometiendo la integridad de los datos ofrecidos por el sistema, lo cual hubiese supuesto un auténtico fracaso en el procesado de los datos.
+
+Al igual que con el módulo de configuración, el modo de acceso al módulo de depuración se realiza mediante la instanciación de un objeto estático, tal y como se muestra en la siguiente figura:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+    //Variables de depuración
+    static Debug _c = new Debug();
+\end{lstlisting}
+\caption{Código: Inicialización del entorno: Depuración}
+\label{cod:iniciacionentornodepuracion}
+\end{figure}
+
+\section{Entorno de depuración: Empleo de objetos Logger}
+
+Para la gestión de la depuración se ha hecho uso del objeto global \texttt{Logger}, que permite gestionar la salida a ficheros, provee de diversos niveles de depuración y aunque no es la alternativa más avanzada, es lo suficientemente potente y simple como para poder modificarla, ampliarla y mejorarla a nuestro sistema.
+
+Se provee por tanto de una clase llamada \texttt{Debug} que hace sirve para esteblecer la configuración del sistema de Log del sistema. En la siguiente figura, se observa el código que genera la salida de log del sistema.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+ public void generarConfiguracion(){
+ try {
+      //Creamos el directorio de logs si no existe
+      File dir_logs = new File("logs");
+      if (!dir_logs.exists()) {
+        dir_logs.mkdir();
+      }
+     
+      Logger.getAnonymousLogger().setLevel(Level.ALL);
+      Logger.getGlobal().setLevel(Level.ALL);
+      
+      //Fichero de log global
+      FileHandler f_global = new FileHandler("logs/log", 314572800, 6, true);
+      f_global.setLevel(Level.ALL);
+      f_global.setFormatter(new formatoLog());
+
+      Logger.getGlobal().addHandler(f_global);
+      Logger.getGlobal().removeHandler(new ConsoleHandler());
+      
+      //Fichero de log global en XML
+      FileHandler f_global_XML = new FileHandler("logs/xml", 314572800, 6, true);
+      f_global_XML.setLevel(Level.WARNING);
+      f_global_XML.setFormatter(new XMLFormatter());
+
+      Logger.getGlobal().addHandler(f_global_XML);
+      
+      //Fichero dedicado para los errores
+      FileHandler f_global_error = new FileHandler("logs/error", 314572800, 3, true);
+      f_global_error.setLevel(Level.SEVERE);
+      f_global_error.setFormatter(new formatoLog());
+
+      Logger.getGlobal().addHandler(f_global_error);
+      
+      
+       //Fichero dedicado para los errores
+      FileHandler f_info = new FileHandler("logs/info", 314572800, 3, true);
+      f_info.setLevel(Level.INFO);
+      f_info.setFormatter(new formatoLog());
+
+      Logger.getGlobal().addHandler(f_info);
+      
+
+    } catch (IOException | SecurityException ex) {
+      Logger.getGlobal().log(Level.SEVERE, null, ex);
+    }
+  }
+\end{lstlisting}
+\caption{Código: Inicialización del entorno: Configuración del sistema de Depuración}
+\end{figure}
+
+Como se observa, se generan 4 ficheros de depuración que se describen a continuación:
+
+\begin{description}
+\item [{\texttt{{logs/info}}}] Fichero que almacena la información de información del sistema en un formato personalizado.
+\item [{\texttt{{logs/xml}}}] Fichero que almacena los mensajes con nivel superior a ADVERTENCIA en formato XML con información avanzada de depuración.
+\item [{\texttt{{logs/eror}}}] Fichero que almacena los mensajes con nivel superior a ERROR en formato personalizado.
+\item [{\texttt{{logs/log}}}] Fichero que almacena TODOS los mensajes de depuración del sistema en un formato personalizado.
+\end{description}
+
+La ventaja del uso de \texttt{Logger} es que provee mecanismos para almacenar los ficheros de log con un tamaño máximo y un número máximo de ficheros por cada log. Así en nuestro caso, cada log puede emplear hasta 6 ficheros de 314572800 bytes (300MB por fichero). En caso de llenar los 6 ficheros, se elimina automáticamente los datos más antiguos.
+
+\subsection{Formato personalizado de fichero de depuración.}
+
+Hemos comentado que hemos empleado (salvo en la salida ampliada XML) un formato personalizado para la salida de depuración. Si bien por defecto la clase \texttt{Logger} provee de varios formatos para la salida de datos, consideramos que ninguno de ellos ofrecía ni el formateado ni la información que creíamos necesaria para nuestro sistema.
+
+Además, como se verá en el Capítulo \ref{chap:visoreventos} donde se presenta la herramienta del Visor de Eventos, haber desarrollado nuestro propio formato para la salida de depuración nos permite implementar software que sea capaz de trabajar con esa salida para presentar de forma más gráfica la ejecución de nuestro sistema.
+
+Para definir el formato personalizado de depuración, se ha implementando una clase que extiende las funcionalidades de la clase \texttt{java.util.logging.SimpleFormatter} y se ha sobreescrito el método \texttt{format} como se puede observar en la siguiente figura.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+/**
+ * Clase que indica el formato de salida del fichero de log
+ * Basado en la clase java.util.logging.SimpleFormatter
+ * @author antares
+ */
+public class formatoLog extends java.util.logging.SimpleFormatter {
+
+    private final Date dat = new Date();
+    
+  @Override
+  public  synchronized String format(LogRecord record) {
+       dat.setTime(record.getMillis());
+       return Debug.sdf.format(dat) + "\t" + record.getLevel().getName() +"\t" + record.getSourceClassName() + "\t" + record.getSourceMethodName() + "\t" + record.getMessage() +   "\n" ;
+    }
+}
+\end{lstlisting}
+\caption{Código: Formato personalizado de depuración}
+\end{figure}
+
+Así se ha añadido una marca temporal a cada registro del log pues creemos que en un sistema como el nuestro saber la fecha de ocurrencia de cada registro es importante. Además se hace uso de una estructura tabular muy sencilla, frente a alternativas de formatos más complejos (como XML o JSON). Precisamente esta simpleza, es la que permite trabajar de forma tan rápida y eficiente del sistema de log.
+
+\subsection{Ejemplo de uso}
+
+Para emplear el sistema de depuración sólo es necesario emplear la variable global \texttt{Logger} habiendo previamente instanciado un objeto de tipo \texttt{Debug} (que puede hacerse una única vez al comienzo de la ejecución del sistema). En la siguiente figura, se muestran distintos tipos de mensajes que pueden ser enviados.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+//Mensaje de información
+Logger.getGlobal().info("Esto es un mensaje de información");
+
+//Mensaje de error
+Logger.getGlobal().severe("Esto es un mensaje de error");
+
+//Mensaje de advertencia
+Logger.getGlobal().warning("Esto es un mensaje de advertencia");
+
+//Mensaje de que todo va bien
+Logger.getGlobal().fine("Esto es un mensaje de todo va bien");
+\end{lstlisting}
+\caption{Código: Uso del sistema de depuración}
+\end{figure}
+
+De forma automática, el sistema de depuracíón escribirá en el fichero (o ficheros) que corresponda el mensaje corresponiendo, además de la información adicional que hemos configurado con nuestro formato local.
+
+\section{Mediciones de tiempo}
+
+En ocasiones, la depuración no consiste solamente en la detección y notificación de erores. En un sistema con en el que estamos trabajando, en el que se ha mirado al detalle la optimización y eficiencia del código, proveer de un mecanismo de depuración para la medición de tiempo supone una gran herramienta.
+
+Es por ello que el módulo de depuración implementado dispone de funciones para la medición de tiempo.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+  /**
+   * Variables para medida de tiempo
+   */
+  static long t_start, time;
+  /**
+
+  /**
+   * Función de depuración: Almacena el tiempo actual para realizar una medición posterior
+   *
+   */
+  public void timeCheck() {
+    t_start = System.currentTimeMillis();
+  }
+
+   * Función de depuración: Imprime el tiempo transcurrido desde la última marca de tiempo
+   *
+   * @param reset Booleano que indica si se tiene que es establecer una nueva marca de tiempo tras realizar la medición
+   * @return Cadena de texto con la medición de tiempo
+   */
+  @Deprecated
+  public String timeDisplay(boolean reset) {
+    time = System.currentTimeMillis() - t_start;
+    String t = "(" + df.format(time / 1000.0 / 60.0) + "min)";
+    if (reset) {
+      t_start = System.currentTimeMillis();
+    }
+    return t;
+  }
+\end{lstlisting}
+\caption{Código: Sistema de depuración: mediciones de tiempo}
+\end{figure}
+
+Si bien es un sistema bastante sencillo que sólo permite establecer un sólo temporizador al mismo tiempo, no se consideró necesario realizar un sistema más complicado.
+
+\subsection{Ejemplo de uso}
+
+A continuación se muestra un código de ejemplo donde se realiza la medición de una funcionalidad concreta.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+// ----------------------------------------- //
+_d.timeCheck();
+            ClienteDispositivos clientDi;
+            clientDi = new ClienteDispositivos( String.valueOf(start.getTime()), String.valueOf(end.getTime()));
+            clientDi.setLabel(label);
+            clientDi.createWebResource(clientNo.getNodo(i));
+            response = clientDi.get_Dispositivos(String.class);
+            Logger.getGlobal().fine("Descarga OK" + _d.timeDisplay(true) +"Procesando ");
+            clientDi.setConexion(conexion);
+            if (response != null) {
+                clientDi.procesarDatos(response.toString());
+            }
+Logger.getGlobal().fine("Procesado OK " + clientDi.getProcesados() + _d.timeDisplay(true));
+            clientDi.close();
+// ----------------------------------------- //
+\end{lstlisting}
+\caption{Código: Sistema de depuración: mediciones de tiempo (ejemplo de uso)}
+\end{figure}
+
+
+\section{Formatos de fecha y números flotantes}
+
+En nuestro sistema se trabaja constamente con fechas y horas, sin embargo, existen inumerables representaciones de estos tipos de variables y muchos de ellos no son fácilmente interpretables por los seres humano, por lo que proveer un mecanismo de depuración que nos permita traducir a un formato legible las fechas y horas es una gran herramienta.
+
+De igual manera, los números flotantes en ocasiones pueden ser demasiado grandes, dificultando su interpretación de forma sencilla por parte de los seres humanos.
+
+Atendiendo a esta necesidad, se completa el módulo de depuración con dos objetos estáticos que permiten el formateo de fechas y números enteros en un formato fácilmente legible por los seres humanos. Para ello, hacemos uso de las clases \texttt{SimpleDateFormat} y \texttt{DecimalFormat} respectivamente.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+  /**
+   * Variable de formato para número flotantes
+   */
+  public static DecimalFormat df = new DecimalFormat("#.####");
+  /**
+   * Variable de formato para fechas
+   */
+  public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+\end{lstlisting}
+\caption{Código: Sistema de depuración: formateo de fechas y decimales}
+\end{figure}
+
+\subsection{Ejemplo de uso}
+
+A continuación se muestra un ejemplo de uso de este mecanismo para el formateo de fechas y decimales un formato amigable con el ser humano.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+// ----------------------------------------- //
+String label = Debug.sdf.format(startDate);
+
+String valor = Debug.df.format(valorFlotante);
+     
+// ----------------------------------------- //
+\end{lstlisting}
+\caption{Código: Sistema de depuración: formateo de fechas y decimales}
+\end{figure}
+
+\vfill
+\cleardoublepage

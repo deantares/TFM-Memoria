@@ -1,0 +1,123 @@
+\myChapter{Base de Datos Local: MySQL}\label{chap:servidor}
+\begin{flushright}{\slshape
+    Call me Ishmael.} \\ \medskip
+    --- {Herman Melville, Moby-Dick; or, The Whale}
+\end{flushright}
+\minitoc\mtcskip
+\vfill
+
+\clearpage
+
+Cómo se ha comentado anteriormente, para almacenar la base de datos local se emplea una instalación de MySQL donde se ha quidado con mimo la configuración del entorno para hacer que el gestor de base de datos se comporte de la manera más eficiente posible en el entorno que nos encontramos.
+
+En este capítulo mostraremos las optimizaciones y configuraciones que se han realizado en el gestor de base de datos, así como la estructura y procedimientos empleados para el procesamiento de los datos.
+
+\section{Esquema de base de datos}
+
+En esta sección mostraremos el esquema de base de datos empleado en cada tabla.
+
+\subsection{Nodo}
+
+Esta tabla es la encargada de almacenar la información de los nodos del sistema. Consta de los siguientes campos, cuya relación puede observarse en la Figura \ref{fig:db-nodos}:
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=10pc]{img/almacenamiento/estructura_nodos.png}
+\caption{Esquema de la base de datos local: Nodos}
+\label{fig:db-nodos}
+\end{SCfigure}
+
+\begin{description}
+\item [{\texttt{{idNodo}}}] (BIGINT 20) Identificador del nodo, es unico para cada nodo-sensor.
+\item [{\texttt{{latitud}}}] (FLOAT) Posición geográfica del nodo: latitud.
+\item [{\texttt{{longitud}}}] (FLOAT) Posición geográfica del nodo: longitud.
+\item [{\texttt{{nombre}}}] (CHAR 255) Nombre del nodo, en formato amigable con el ser humano. Suele hacer referencia a la ubicación del nodo así como al tipo de sensor que emplea para la detección.
+\item [{\texttt{{poligono}}}] (VARCHAR 14000) Representación del nodo en el mapa usando notación KML.
+\end{description}
+
+\subsection{Dispositivos}
+
+Es la tabla encargada de capturar la información relativa a cada dispositivo capturado por los nodos. Consta de los siguientes campos, cuya relación puede observarse en la Figura \ref{fig:db-dispositivo}:
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=10pc]{img/almacenamiento/estructura_dispositivo.png}
+\caption{Esquema de la base de datos local: Dispositivos}
+\label{fig:db-dispositivo}
+\end{SCfigure}
+
+\begin{description}
+\item [{\texttt{{idDispositivo}}}] (CHAR 255) Identificador del dispositivo, es unico para cada dispositivo. Suele ser calculado mediante un cifrado de la clave de identificación del dispositivo (por ejemplo, la dirección MAC en sensores tipo Bluetooth o Wifi).
+\item [{\texttt{{majordeviceclass}}}] (CHAR 10) Tipo de dispositivo.
+\item [{\texttt{{minordeviceclass}}}] (CHAR 5) Tipo de dispostivio.
+\item [{\texttt{{serviceclass}}}] (CHAR 10) Clase de servicio.
+\item [{\texttt{{fabricante}}}] (CHAR 250) Nombre del fabricante del dispositivo.
+\end{description}
+
+La naturaleza de los campos \texttt{majordeviceclass},\texttt{minordeviceclass} y \texttt{serviceclass} se describe en el Anexo \ref{chap:bluetooth}, lo único que es necesario conocer es que son empleados por sensores bluetooth para concer la naturaleza del dispositivo capturado.
+
+\subsection{Pasos}
+
+Es la tabla encargada de capturar la captación de un determinado dispositivo en un nodo concreto en un instante de tiempo determinado. Consta de los siguientes campos, cuya relación puede observarse en la Figura \ref{fig:db-paso}:
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=10pc]{img/almacenamiento/estructura_paso.png}
+\caption{Esquema de la base de datos local: Dispositivos}
+\label{fig:db-paso}
+\end{SCfigure}
+
+\begin{description}
+\item [{\texttt{{idNodo}}}] (BIGINT 20) Identificador del nodo, es único para cada nodo-sensor.
+\item [{\texttt{{idDispositivo}}}] (CHAR 50) Identificador del dispositivo, es único para cada dispositivo. Suele ser calculado mediante un cifrado de la clave de identificación del dispositivo (por ejemplo, la dirección MAC en sensores tipo Bluetooth o Wifi).
+\item [{\texttt{{tfin}}}] (BIGINT 20) Instante de tiempo en el que se perdió la señal del dispositivo capturado. Expresado en formato unixtimestamp con precisión de milisegundos
+\item [{\texttt{{tinicio}}}] (BIGINT 20) Instante de tiempo en el que se detectó por primera vez la señal del dispositivo capturado. Expresado en formato unixtimestamp con precisión de milisegundos
+\end{description}
+
+Cómo se puede observar, no se dispone de una única clave primaria para esta tabla, sino que cada tupla es representada de forma inequívoca por la convicación de los identificadores de Dispositivo y Nodo, y por el instante de tiempo. Es decir, no puede aparecer dos veces detectado el mismo dispositivo en el mismo instante de tiempo en el mismo nodo.
+
+\section{Optimizaciones en la base de datos}
+
+Aunque el esquema presentado es bastante simple, se ha realizado un estudio con el fin de optimizar al máximo las tablas y las consultas relacionadas con la lectura de los datos, que como se ha comentado anteriormente, es una pieza crítica en nuestro sistema.
+
+Es por ello que en este apartado se presentarán las optimizaciones llevadas a cabo en la estructura de la base de datos. Todas ellas mantienen en común que hacen uso de características avanzadas del gestor de Base de Datos, que no suelen ser habilitadas ni configuradas por defecto, pero que suponen una mejoría significativa en eficiencia. 
+
+\subsection{Optimizado de consultas temporales} 
+
+El marco temporal se encuentra presente en la mayoría de las peticiones que se realizan a la base de datos, esto es, las peticiones suelen requerir los datos de un intervalo concreto de tiempo. De esta forma, en la gran mayoría de peticiones del sistema, estamos interesados en un periodo de tiempo concreto, como por ejemplo los datos de un día en concreto, o de una hora o de una semana.
+
+Un mecanismo muy usado en las bases de datos para optimizar las consultas, es configurar un índice en aquellos parámetros que determinan los campos de las búsqueda, es decir las condiciones \texttt{WHERE}. Sin embargo, el índice común para MySQL opera según una tabla HASH. Un índice basado en HASH determina mediante una función matemática la posición de una tupla determinada en función de la clave o KEY. Los índices basados en HASH permiten accesos a tuplas individuales y únicas en O(1) (en orden constante), lo que supone un tiempo “despreciable”. Este tipo de índice priorizan los operadores de igualdad (o diferencia).
+
+Sin embargo, para devolver listados de tuplas necesitan explorar todas las tuplas existentes por lo que el orden de eficiencia es O(n). En la figura \ref{fig:db-indicehash}, se puede observar este mecanismo.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=10pc]{img/almacenamiento/indicetemporalHASH.png}
+\caption{Funcionamiento de un índice Hash en la localización de tuplas}
+\label{fig:db-indicehash}
+\end{SCfigure}
+
+
+
+
+\subsection{Optimización de índices de identificador}
+
+\subsection{Particionado de datos}
+
+\begin{tikzpicture}
+\node[circle,draw](z){$30$}
+  child[missing]{}
+  child{
+    node[circle,draw]{40} child{node[circle,draw] {20}} child[missing] };
+\end{tikzpicture}
+
+
+\subsection{Reducción del tamaño de las bases de datos}
+
+\section{Procedimientos de procesamiento}
+
+Hola mundo
+
+\vfill
+\cleardoublepage
+

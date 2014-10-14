@@ -1,0 +1,48 @@
+\myChapter{Conclusiones}\label{chap:web}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+
+\clearpage
+
+
+En el ámbito del proyecto SIPESCA se está desarrollando un sistema de información de bajo coste y autónomo para monitorizar el tráfico y conocer el estado de las carreteras en tiempo real.
+
+El objetivo final es disponer de información acerca de los flujos de tráfico que se producen entre ciudades, para facilitar la gestión de la red viaria y la toma de decisiones en los desplazamientos por parte de los ciudadanos.
+
+Gracias al dispositivo autónomo Intelify, el sistema recopila información de forma masiva para su posterior interpretación buscando, por ejemplo, asociaciones dentro de los datos obtenidos, que identifiquen tendencias.
+
+
+En una primera fase, se instalaron seis dispositivos para monitorizar el tráfico teniendo en cuenta diferentes tipos de vía, con muy distintos tipos de tráfico. 
+
+Así, pudimos monitorizar la densidad de tráfico y los desplazamientos realizados por los usuarios, individualizando los vehículos conforme se mueven entre nodos dentro de la zona.
+
+También obtuvieron estadísticas en función de los días de la semana y de los horarios de circulación.
+
+Se realizaron diversos análisis de los datos recopilados durante un periodo de monitorización de dos meses para obtener diferentes estadísticas. Concretamente, el número total de vehículos detectados por cada nodo, en días laborables o festivos. También la densidad del tráfico por rango horario, y los desplazamientos individuales. Además, analizó la velocidad media en un tramo delimitado por dos nodos consecutivos.
+
+Posteriormente, se fue mejorando la estructura de almacenamiento de la base de datos, usando servicios en la nube de Google para asegurar la disponibilidad. Asimismo, se realizó un trabajo intenso para la optimización de las consultas, y se actualizó el hardware del servidor para soportar un mayor tráfico y carga computacional. 
+
+También se recopilaron y probaron diversos métodos de data mining y procesamiento de datos, concretamente, algoritmos de clustering, clasificación y predicción de series temporales.
+
+En una segunda fase, y a partir de una mejora en el hardware del dispositivo de monitorización, se instalaron los nodos en el área de Sevilla con lo que completamos la red necesaria para recopilar y ofrecer una información más completa y disponer de nuevos datos para continuar el trabajo.
+
+Se determinó la necesidad de mantener los datos precalculados en la nube (Google Fusion Tables), asegurando la fiabilidad y disponibilidad de la información para los usuarios. 
+
+Asimismo, se diseñó y desarrolló una aplicación móvil multiplataforma para facilitar el acceso a la información a cualquier usuario, y desde cualquier plataforma (PC, móvil, tablet, etc).
+
+Así, a través de la web principal y de la aplicación móvil comenzamos a servir información extraida de los datos a los usuarios, que pueden acceder a la información desde ordenadores, móviles y tablets.
+
+En la última fase del proyecto, se implementó la tecnología de alimentación basada en placas solares y baterías, así como la detección por RFID. 
+
+Se mejoró el portal web y la aplicación web con la que se sirve la información sobre tráfico monitorizado. Se amplió y completó con diferentes tipos de información, estadísticas y gráficos interactivos.
+
+Esta información se ofrece también a través de una aplicación móvil para la plataforma Android (aunque se podría adaptar fácilmente para otras plataformas móviles, como iOS, FirefoxOS o Windows Phone).
+
+Además, se comenzó a servir información a través de diversas redes sociales, a las que los usuarios se pueden suscribir para recibir la información de los nodos en los que están interesados.
+
+\vfill
+\cleardoublepage

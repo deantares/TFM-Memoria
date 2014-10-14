@@ -1,0 +1,485 @@
+\documentclass[10pt]{scrbook}%
+
+
+\let\upDelta\Delta
+% ********************************************************************
+% KOMA-Script setup (todo)
+% ********************************************************************
+\KOMAoptions{%
+%    DIV=15,%
+    BCOR=12mm,%
+    %paper=b5,%
+    fontsize=11pt,%
+    cleardoublepage=empty,%
+    headsepline=true,
+    footinclude=true,%
+    headinclude=true,%
+    headlines=2.5,%
+    open=right,%
+    numbers=noenddot%
+%    abstract=false%
+}
+
+\setlength{\paperwidth}{16.828cm} % set size for latex
+\setlength{\paperheight}{26cm}
+\special{papersize=16.828cm,26cm} % set size for ghostscript
+\typearea[6mm]{1} % 6mm for spine
+
+% ********************************************************************
+% Información genérica
+% ********************************************************************
+\newcommand{\myTitle}{Big Data en la predicción del tráfico: Optimización y difusión en la Nube\xspace}
+\newcommand{\myDegree}{Máster en Ingeniería de Computadores y Redes\xspace}
+\newcommand{\myName}{Antonio J. Fernández Ares\xspace}
+\newcommand{\myDegreeManualName}{Proyecto Fin de Máster\xspace}
+\newcommand{\myProf}{myProf\xspace}
+\newcommand{\myOtherProf}{myOtherProf\xspace}
+\newcommand{\myDirectorOne}{Pedro A. Castillo Valdivieso}
+\newcommand{\myDirectorTwo}{Antonio M. Mora García}
+\newcommand{\myDirectorThree}{}
+\newcommand{\mySupervisor}{Prof. Dr. D. \myDirectorOne\\Prof. Dr. D. \myDirectorTwo\\Prof. Dr. D. \myDirectorThree}
+\newcommand{\myFaculty}{Escuela Técnica Superior de Informática y Telecomunicaciones\xspace}
+\newcommand{\myDepartment}{Arquitectura y Tecnología de Computadores\xspace}%(Circuits and Systems for Information Processing)
+\newcommand{\myUni}{\protect{Universidad de Granada}\xspace}
+\newcommand{\myLocation}{Granada\xspace}
+\newcommand{\myDay}{1}
+\newcommand{\myTime}{Septiembre de 2014\xspace}
+
+%*******************************************************
+% Packages with options that might require adjustments
+%*******************************************************
+\usepackage[latin1]{inputenc} %¿Esto resuelve el problema de los acentos digo yo...?
+
+%\usepackage[utf8]{inputenc}
+
+\usepackage[spanish,american,english,es-nodecimaldot]{babel}
+\usepackage[square,numbers,sort&compress]{natbib}
+\usepackage[spanish]{babelbib}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage[mathcal]{euscript}
+\usepackage{latexsym}
+\usepackage{relsize}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[right]{eurosym}
+\usepackage[top]{mcaption}
+\usepackage[margincaption]{sidecap}
+
+\usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{rotating}
+
+\usepackage{lettrine}
+\usepackage{textcase}
+
+%Modificado. Por defecto carga URL sin configuración
+\usepackage[hyphens]{url}
+%\usepackage{hyperref}
+
+\usepackage{caption}
+\usepackage[tight,spanish]{minitoc}
+
+\usepackage{calc}
+\usepackage{fp}
+
+\usepackage{pgfplots}
+\usetikzlibrary{dateplot}
+
+\usepackage{cmap}
+
+\usepackage{ifthen}
+
+\usepackage{fancyvrb} %FERGU
+\usepackage{etex}
+\usepackage{minted}
+\usepackage{algorithmic}
+\providecommand{\e}[1]{\ensuremath{\times 10^{#1}}}
+
+
+\input{coloricos} %OJO CON ESTO (EVOSOFT) vs highlight.sty de SOA-SOCO
+\usepackage[final]{listings}
+
+\usepackage{classicthesis-ldpkg}
+%*******************************************************
+% Options for classicthesis.sty:
+% tocaligned eulerchapternumbers drafting linedheaders listsseparated
+% subfigure nochapters beramono eulermath parts minionpro pdfspacing
+\usepackage[pdfspacing,eulerchapternumbers,crownquartopaper,%drafting,%linedheaders,%tocaligned,%
+            subfigure,beramono,eulermath,parts]{classicthesis2}
+% ********************************************************************
+% Language/strings for backrefs (change here, thanks, Lorenzo)
+%*******************************************************
+\renewcommand{\backrefnotcitedstring}{\relax}%(Not cited.)
+%\renewcommand{\backrefcitedsinglestring}[1]{(Citado en la p\'agina~#1.)}
+%\renewcommand{\backrefcitedmultistring}[1]{(Citado en las p\'aginas~#1.)}
+%\renewcommand{\backreftwosep}{ y~}
+%\renewcommand{\backreflastsep}{ y~}
+% ********************************************************************
+% Setup and Finetuning
+%*******************************************************
+\newlength{\abcd} % for ab..z string length calculation
+\newcommand{\myfloatalign}{\centering} % how all the floats will be aligned
+\setlength{\extrarowheight}{3pt} % increase table row height
+% ********************************************************************
+% Captions look and feel
+%*******************************************************
+\DeclareCaptionFont{titlecolor}{\color{titlecolor}\fontfamily{pbk}\selectfont}
+\DeclareCaptionFont{alternateTitlecolor}{\color{alternateTitlecolor}\fontfamily{pbk}\selectfont}
+\captionsetup{justification=RaggedRight,format=plain,labelsep=newline,font=scriptsize,labelfont=titlecolor,textfont=alternateTitlecolor}%
+% ********************************************************************
+% Where to look for graphics
+%*******************************************************
+%\graphicspath{{gfx/}{misc/}} % considered harmful according to l2tabu
+% ********************************************************************
+% Hyperreferences
+%*******************************************************
+\hypersetup{%
+    colorlinks=true, linktocpage=true, pdfstartpage=3, pdfstartview=FitV,%
+    breaklinks=true, pdfpagemode=UseNone, pageanchor=true, pdfpagemode=UseOutlines,%
+    plainpages=false, bookmarksnumbered, bookmarksopen=true, bookmarksopenlevel=1,%
+    hypertexnames=true, pdfhighlight=/O,%hyperfootnotes=true,%nesting=true,%frenchlinks,%
+    urlcolor=colorCorporativoOscuro, linkcolor=alternateTitlecolor, citecolor=Maroon, %pagecolor=RoyalBlue,%
+    % uncomment the following line if you want to have black links (e.g., for printing)
+    %urlcolor=Black, linkcolor=Black, citecolor=Black, %pagecolor=Black,%
+    pdftitle={\myTitle},%
+    pdfauthor={\textcopyright\ \myName, \myUni, \myFaculty},%
+    pdfsubject={},%
+    pdfkeywords={},%
+    pdfcreator={pdfLaTeX},%
+    pdfproducer={LaTeX with hyperref and classicthesis}%
+}
+%********************************************************************
+% Hyphenation
+%*******************************************************
+\hyphenation{Mul-ti-pli-ca-ti-ve de-sa-rro-llar he-te-ro-gé-ne-os pro-pues-ta o-fi-ci-na vi-de-o-ga-mes zoo-kee-per sub-po-pu-la-tion pa-ra-digm Sprin-ger Mi-guel Mo-ra ha-bi-ta-ción I-lle-ras Ge-ne-bot pre-sents Ba-ye-sian al-go-rithms E-C-F re-pla-cer re-pla-cer-Na-me He-Ha OS-Gi OS-Gi-Liath W-S-D-L pro-vi-der M-M-D-P}
+
+
+%********************************************************************
+% Redefinir en español la edición en la bibliografía
+%*******************************************************
+
+\declarebtxcommands{spanish}{%
+\def\btxnumeralshort#1{%
+${#1}^a$}%\btxnumeralfallback{spanish}{#1}}%
+\def\btxnumerallong#1{%
+${#1}^a$}%\btxnumeralfallback{spanish}{#1}}%
+}
+
+%********************************************************************
+% Renombrar al español algunos identificadores
+%*******************************************************
+
+\renewcommand{\contentsname}{Lista de Contenidos}
+\renewcommand{\listfigurename}{Lista de Figuras}
+\renewcommand{\listtablename}{Lista de Tablas}
+\renewcommand{\bibname}{Bibliografía}
+\renewcommand{\partname}{Parte}
+\renewcommand{\figurename}{Figura}
+\renewcommand{\tablename}{Tabla}
+\newcommand{\tablaname}{Tabla}
+\renewcommand{\cfttabpresnum}{\tablaname~}
+
+\renewcommand{\person}[1]{{\color{Maroon}{#1}}}
+
+
+
+\selectbiblanguage{spanish}
+
+%\renewcommand{\spacedallcaps}[1]{\textsc{\MakeTextUppercase{#1}}}
+%\renewcommand{\spacedlowsmallcaps}[1]{\textsc{\MakeTextUppercase{#1}}}
+
+%********************************************************************
+% Tipos de letras
+%*******************************************************
+
+%\renewcommand{\encodingdefault}{T1}
+%\renewcommand{\familydefault}{gm}%papyrus}%bradley} %pbk,ppl
+%\renewcommand{\seriesdefault}{b}
+
+%\renewcommand{\rmdefault}{bradley}
+
+\newcommand{\Copyright}{{\small$^\mathrm{\copyright}$}~}
+\newcommand{\apriori}{\emph{a priori}\xspace}
+\newcommand{\aposteriori}{\emph{a posteriori}\xspace}
+\newcommand{\etal}{\emph{et al.}\xspace}
+\newcommand{\cronbach}{\mbox{$\alpha$--\emph{Cronbach}}\xspace}
+
+\newcommand{\itemlabel}[1]{{\color{Maroon}{\textsc{#1}}}}
+
+\newcommand{\mysize}{\tiny}
+
+%********************************************************************
+% Colores
+%*******************************************************
+
+%\definecolor[named]{ultralightOrange}{rgb}{1,.94,.72}
+%\definecolor[named]{highlightOrange}{rgb}{1,.86,.29}
+%\definecolor[named]{lightOrange}{rgb}{1,.45,0}
+\definecolor[named]{darkOrange}{rgb}{.8,.3,0}
+
+\definecolor[named]{minimumOrange}{rgb}{1,.976,.474}
+\definecolor[named]{ugrOrange}{rgb}{.945,.365,.165} % PANTONE 179: {R:241, G:93, B:42}
+%\definecolor[named]{ugrOrange}{cmyk}{0,.309,.368,0} % PANTONE 179: {C:0, M:79, Y:94, K:0}
+\definecolor[named]{ugrGray}{rgb}{.463,.482,.494}
+
+%\definecolorseries{ugrOrangeSerie}{rgb}{last}{ugrOrange}{white}
+%\resetcolorseries[10]{ugrOrangeSerie}
+
+\colorlet{ultralightOrange}{ugrOrange!5!minimumOrange}
+\colorlet{highlightOrange}{ugrOrange!25!minimumOrange}
+\colorlet{lighterOrange}{ugrOrange!40!minimumOrange}
+\colorlet{lightOrange}{ugrOrange!75!minimumOrange}
+
+\definecolor{colorCorporativoMasSuave}{named}{ultralightOrange}
+\definecolor{colorCorporativoSuave}{named}{highlightOrange}
+\definecolor{colorCorporativoMedioSuave}{named}{lighterOrange}
+\definecolor{colorCorporativoMedio}{named}{lightOrange}
+\definecolor{colorCorporativo}{named}{ugrOrange}
+\definecolor{colorCorporativoOscuro}{named}{darkOrange}
+\definecolor{Maroon}{named}{colorCorporativoOscuro}
+
+%Mis añadidos
+\definecolor{RoyalBlue}{cmyk}{1, 0.50, 0, 0}
+\definecolor{Green}{cmyk}{0.78, 0.05, 0.71, 0}
+
+
+\definecolor{headColor}{named}{white}%{colorCorporativoMasSuave}
+\definecolor{titleNumbercolor}{named}{ugrGray}
+\definecolor{titlecolor}{named}{ugrOrange}
+\definecolor{alternateTitlecolor}{named}{darkOrange}
+
+\newcolumntype{A}{%
+>{\color{black}\columncolor{colorCorporativoSuave}}%
+p{0.95\textwidth}}
+
+\newcolumntype{B}{%
+>{\color{black}\columncolor{colorCorporativoMasSuave}}%
+p{0.95\textwidth}}
+
+\newcolumntype{C}{%
+>{\columncolor{colorCorporativoSuave}}p{\textwidth}}
+%>{\columncolor{colorCorporativo}}p{4pt}}
+
+\newcolumntype{D}{%
+>{\color{black}\fontfamily{pbk}\selectfont\columncolor{colorCorporativoSuave}}p{8em}}
+%>{\columncolor{colorCorporativo}}p{4pt}
+
+%********************************************************************
+% Cabeceras
+%*******************************************************
+
+\def\ptctitle{Index}
+\def\mtctitle{Index}
+\def\stctitle{Index}
+\setlength{\mtcindent}{0pt}
+\renewcommand{\mtifont}{\normalsize\scshape\lsstyle}
+
+%\typearea[current]{last}
+%\typearea[current]{current}
+%\setlength{\topmargin}{-4em}
+%\setlength{\textheight}{590.80026pt}%{595.80026pt}
+%\setlength{\tabcolsep}{1em}
+
+
+
+
+\newboolean{TesisCompleta}
+\setboolean{TesisCompleta}{false}
+
+\newboolean{PaginasDeInicio}
+\setboolean{PaginasDeInicio}{true}
+
+\newcounter{IncluyeCapitulo}
+\setcounter{IncluyeCapitulo}{2}
+
+
+%No partir palabras
+%\brokenpenalty=10000
+%\hyphenpenalty=10000
+
+%Espacios después de párrafos
+\setlength{\parskip}{\medskipamount}
+\setlength{\parindent}{0pt}
+
+
+%Usar paquete xymatrix
+\usepackage[all]{xy}
+
+%Usar paquete para resaltado de código :)
+\usepackage{listings}
+
+%Usar paquete para gráficos
+\usepackage{tikz}
+
+%Nombre del título de minitoc en castellano
+\renewcommand{\mtctitle}{Índice de capítulo}
+
+%Para cancelar
+\usepackage{cancel}
+
+%Partir URLs largas
+%\usepackage{url}
+%\usepackage{breakurl}
+%\usepackage[breaklinks]{hyperref}
+
+% ********************************************************************
+% ********************************************************************
+% ********************************************************************
+% Comienza el documento
+% ********************************************************************
+% ********************************************************************
+% ********************************************************************
+\begin{document}
+\frenchspacing
+\raggedbottom
+\selectlanguage{spanish}
+\renewcommand{\contentsname}{Lista de Contenidos}
+\renewcommand{\listfigurename}{Lista de Figuras}
+\renewcommand{\listtablename}{Lista de Tablas}
+\renewcommand{\bibname}{Bibliografía}
+\renewcommand{\partname}{Parte}
+\renewcommand{\figurename}{Figura}
+\renewcommand{\tablename}{Tabla}
+\renewcommand{\figureautorefname}{Figura}
+\renewcommand{\tableautorefname}{Tabla}
+\renewcommand{\paragraphautorefname}{P\'arrafo}
+\renewcommand{\subparagraphautorefname}{Subp\'arrafo}
+\renewcommand{\footnoteautorefname}{Nota al pie}
+\renewcommand{\FancyVerbLineautorefname}{}
+\renewcommand{\theoremautorefname}{Teorema}
+\renewcommand{\appendixautorefname}{Ap\'endice}
+\renewcommand{\equationautorefname}{Ecuaci\'on}
+\renewcommand{\itemautorefname}{Item}
+\newcommand*{\subfigureautorefname}{Figura}
+
+% Parámetros para Lettrine (lo de la primera letra más grande en los comienzos de los capítulos)
+%
+\setcounter{DefaultLines}{2}
+\renewcommand{\DefaultLoversize}{0.1} %0.25
+\renewcommand{\DefaultLraise}{0.3} %0.25
+\renewcommand{\DefaultLhang}{0.5} %0.5
+\setlength{\DefaultFindent}{0pt}%0.5em}
+\setlength{\DefaultNindent}{0pt}%0.1em}
+\setlength{\DefaultSlope}{0pt}
+\renewcommand{\LettrineFontHook}{\color{colorCorporativoOscuro}\fontfamily{fau}}%{fau}pzc}\fontseries{bx}\fontshape{it}}
+\renewcommand{\LettrineTextFont}{\color{colorCorporativoOscuro}\fontfamily{fau}\scshape}
+
+\pagenumbering{roman}
+\pagestyle{scrheadings}%{plain}
+
+\renewcommand{\labelenumii}{\arabic{enumii}.}
+
+%********************************************************************
+% Definiciones Captions
+%*******************************************************
+
+\sidecaptionvpos{figure}{t}
+
+\ifthenelse{\boolean{PaginasDeInicio}}{
+%********************************************************************
+% Frontmatter
+%*******************************************************
+% \include{FrontBackmatter/DirtyTitlepage}
+\pagecolor{white}
+\include{FrontBackmatter/SignedTitlepage}%\include{FrontBackmatter/Titlepage}
+\include{FrontBackmatter/Titleback}
+\cleardoublepage
+%\include{FrontBackmatter/SignedTitlepage}
+%\cleardoublepage
+\include{FrontBackmatter/Vistobueno}
+\cleardoublepage
+\include{FrontBackmatter/Declaration}
+\cleardoublepage
+\include{FrontBackmatter/Dedication}
+\cleardoublepage
+\include{FrontBackmatter/Abstract}
+\cleardoublepage
+\include{FrontBackmatter/Publication}
+\cleardoublepage
+\include{FrontBackmatter/Acknowledgments}
+\pagestyle{scrheadings}
+\cleardoublepage
+\include{FrontBackmatter/Contents}
+}
+{
+
+}
+
+
+
+% *******************************************************
+% Mainmatter
+% *******************************************************
+\pagenumbering{arabic}
+
+\ifthenelse{\boolean{TesisCompleta}}{
+%-----------------------------
+\myPart{Introducción}\label{part:introduccion}
+
+%REALMENTE tienes que escribir una introducción. 
+
+}
+{
+%-----------------------------  PONER LETTRINE EN SECCIONES Y NO INDENT EN SUBSECCIONES!!!
+\myPart{Introducción}\label{part:introduccion}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Introduccion/antecedentes}}{\myChapter{Antecedentes}\label{chap:antecedentes}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Introduccion/objetivos}}{\myChapter{Objetivos}\label{chap:objetivos}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Introduccion/metodologia}}{\myChapter{Metodología}\label{chap:metodologia}}
+
+\myPart{Optimización del procesado de Datos}\label{part:datos}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Datos/servidor}}{\myChapter{Servidor}\label{chap:servidor}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Datos/sima_actualizadorlocal}}{\myChapter{SiMa: Actualizador Local}\label{chap:simaactualizadorlocal}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Datos/sima_configuracion}}{\myChapter{SiMa: Gestión de la Configuración}\label{chap:simaconfiguracion}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Datos/sima_depuracion}}{\myChapter{SiMa: Mecanismos de depuracion}\label{chap:simadepuracion}}
+
+\myPart{Almacenamiento y Optimización del acceso a Datos}\label{part:almacenamiento}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Almacenamiento/local}}{\myChapter{Base de Datos Local}\label{chap:bdlocal}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Almacenamiento/fusion}}{\myChapter{Base de Datos en la Nube}\label{chap:bdnube}}
+
+\myPart{Predicción}\label{part:prediccion}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Prediccion/offline}}{\myChapter{Predicción Offline}\label{chap:prediccionoffline}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Prediccion/online}}{\myChapter{Predicción Online}\label{chap:predicciononline}}
+
+\myPart{Publicación y difusión en la Nube}\label{part:publicacion}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Nube/sima_actualizadornube}}{\myChapter{SiMa: Actualizador Nube}\label{chap:simaactualizadornube}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Nube/apifusiontables}}{\myChapter{API Rest}\label{chap:apirest}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Nube/web}}{\myChapter{Difusión Web}\label{chap:web}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Nube/movil}}{\myChapter{Aplicación Móvil}\label{chap:movil}}
+    %\ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Nube/visoronlineeventos}}{\myChapter{Visor de eventos}\label{chap:visoreventos}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Nube/redessociales}}{\myChapter{Redes Sociales}\label{chap:redessociales}}
+    %\ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Nube/github}}{\myChapter{Ciencia abierta}\label{chap:cienciabierta}}
+
+\myPart{Resultados y conclusiones}\label{part:resultados}
+    %\ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Resultados/resultados}}{\myChapter{Resultados}\label{chap:resultados}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Resultados/conclusiones}}{\myChapter{Conclusiones}\label{chap:conclusiones}}
+    \ifthenelse{\equal{\value{IncluyeCapitulo}}{2}}{\include{capitulos/Resultados/futuralinea}}{\myChapter{Futura Línea de investigación}\label{chap:futuralinea}}
+
+
+
+}
+
+% *******************************************************
+% Backmatter
+% *******************************************************
+\appendix
+\myPart{Anexos}
+        \include{anexos/bluetooth}
+        %%\include{Chapters/appendixosgiliath}
+%\include{Chapters/apendiceC}
+%********************************************************************
+% Other Stuff in the Back
+%*******************************************************
+\cleardoublepage
+\include{FrontBackmatter/Bibliography}
+%\cleardoublepage
+%\include{FrontBackmatter/Declaration}
+\cleardoublepage
+%La contraportada tiene que estar en página par!!
+% \include{FrontBackmatter/DirtyBackpage}
+
+% ********************************************************************
+% Game Over: Restart, Restore or Quit?
+%*******************************************************
+\end{document}
+% ********************************************************************

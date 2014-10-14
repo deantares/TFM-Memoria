@@ -1,0 +1,598 @@
+\myChapter{Base de Datos Local: MySQL}\label{chap:servidor}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+Cómo se ha comentado anteriormente, para almacenar la base de datos local se emplea una instalación de MySQL donde se ha quidado con mimo la configuración del entorno para hacer que el gestor de base de datos se comporte de la manera más eficiente posible en el entorno que nos encontramos.
+
+En este capítulo mostraremos las optimizaciones y configuraciones que se han realizado en el gestor de base de datos, así como la estructura y procedimientos empleados para el procesamiento de los datos.
+
+\section{Esquema de base de datos}
+
+En esta sección mostraremos el esquema de base de datos empleado en cada tabla.
+
+\subsection{Nodo}
+
+Esta tabla es la encargada de almacenar la información de los nodos del sistema. Consta de los siguientes campos, cuya relación puede observarse en la Figura \ref{fig:db-nodos}:
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=10pc]{img/almacenamiento/estructura_nodos.png}
+\caption{Esquema de la base de datos local: Nodos}
+\label{fig:db-nodos}
+\end{SCfigure}
+
+\begin{description}
+\item [{\texttt{{idNodo}}}] (BIGINT 20) Identificador del nodo, es unico para cada nodo-sensor.
+\item [{\texttt{{latitud}}}] (FLOAT) Posición geográfica del nodo: latitud.
+\item [{\texttt{{longitud}}}] (FLOAT) Posición geográfica del nodo: longitud.
+\item [{\texttt{{nombre}}}] (CHAR 255) Nombre del nodo, en formato amigable con el ser humano. Suele hacer referencia a la ubicación del nodo así como al tipo de sensor que emplea para la detección.
+\item [{\texttt{{poligono}}}] (VARCHAR 14000) Representación del nodo en el mapa usando notación KML.
+\end{description}
+
+\subsection{Dispositivos}
+
+Es la tabla encargada de capturar la información relativa a cada dispositivo capturado por los nodos. Consta de los siguientes campos, cuya relación puede observarse en la Figura \ref{fig:db-dispositivo}:
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=10pc]{img/almacenamiento/estructura_dispositivo.png}
+\caption{Esquema de la base de datos local: Dispositivos}
+\label{fig:db-dispositivo}
+\end{SCfigure}
+
+\begin{description}
+\item [{\texttt{{idDispositivo}}}] (CHAR 255) Identificador del dispositivo, es unico para cada dispositivo. Suele ser calculado mediante un cifrado de la clave de identificación del dispositivo (por ejemplo, la dirección MAC en sensores tipo Bluetooth o Wifi).
+\item [{\texttt{{majordeviceclass}}}] (CHAR 10) Tipo de dispositivo.
+\item [{\texttt{{minordeviceclass}}}] (CHAR 5) Tipo de dispostivio.
+\item [{\texttt{{serviceclass}}}] (CHAR 10) Clase de servicio.
+\item [{\texttt{{fabricante}}}] (CHAR 250) Nombre del fabricante del dispositivo.
+\end{description}
+
+La naturaleza de los campos \texttt{majordeviceclass},\texttt{minordeviceclass} y \texttt{serviceclass} se describe en el Anexo \ref{chap:bluetooth}, lo único que es necesario conocer es que son empleados por sensores bluetooth para concer la naturaleza del dispositivo capturado.
+
+\subsection{Pasos}
+
+Es la tabla encargada de capturar la captación de un determinado dispositivo en un nodo concreto en un instante de tiempo determinado. Consta de los siguientes campos, cuya relación puede observarse en la Figura \ref{fig:db-paso}:
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=10pc]{img/almacenamiento/estructura_paso.png}
+\caption{Esquema de la base de datos local: Dispositivos}
+\label{fig:db-paso}
+\end{SCfigure}
+
+\begin{description}
+\item [{\texttt{{idNodo}}}] (BIGINT 20) Identificador del nodo, es único para cada nodo-sensor.
+\item [{\texttt{{idDispositivo}}}] (CHAR 50) Identificador del dispositivo, es único para cada dispositivo. Suele ser calculado mediante un cifrado de la clave de identificación del dispositivo (por ejemplo, la dirección MAC en sensores tipo Bluetooth o Wifi).
+\item [{\texttt{{tfin}}}] (BIGINT 20) Instante de tiempo en el que se perdió la señal del dispositivo capturado. Expresado en formato unixtimestamp con precisión de milisegundos
+\item [{\texttt{{tinicio}}}] (BIGINT 20) Instante de tiempo en el que se detectó por primera vez la señal del dispositivo capturado. Expresado en formato unixtimestamp con precisión de milisegundos
+\end{description}
+
+Cómo se puede observar, no se dispone de una única clave primaria para esta tabla, sino que cada tupla es representada de forma inequívoca por la convicación de los identificadores de Dispositivo y Nodo, y por el instante de tiempo. Es decir, no puede aparecer dos veces detectado el mismo dispositivo en el mismo instante de tiempo en el mismo nodo.
+
+\section{Optimizaciones en la base de datos}
+
+Aunque el esquema presentado es bastante simple, se ha realizado un estudio con el fin de optimizar al máximo las tablas y las consultas relacionadas con la lectura de los datos, que como se ha comentado anteriormente, es una pieza crítica en nuestro sistema.
+
+Es por ello que en este apartado se presentarán las optimizaciones llevadas a cabo en la estructura de la base de datos. Todas ellas mantienen en común que hacen uso de características avanzadas del gestor de Base de Datos, que no suelen ser habilitadas ni configuradas por defecto, pero que suponen una mejoría significativa en eficiencia. 
+
+\subsection{Optimizado de consultas con ventanas temporales} 
+
+El marco temporal se encuentra presente en la mayoría de las peticiones que se realizan a la base de datos, esto es, las peticiones suelen requerir los datos de un intervalo concreto de tiempo. De esta forma, en la gran mayoría de peticiones del sistema, estamos interesados en un periodo de tiempo concreto, como por ejemplo los datos de un día en concreto, o de una hora o de una semana.
+
+Un mecanismo muy usado en las bases de datos para optimizar las consultas, es configurar un índice en aquellos parámetros que determinan los campos de las búsqueda, es decir las condiciones \texttt{WHERE}. Sin embargo, el índice común para MySQL opera según una tabla HASH. Un índice basado en HASH determina mediante una función matemática la posición de una tupla determinada en función de la clave o KEY. Los índices basados en HASH permiten accesos a tuplas individuales y únicas en $O(1)$ (en orden constante), lo que supone un tiempo despreciable. Este tipo de índice priorizan los operadores de igualdad (o diferencia).
+
+Sin embargo, para devolver listados de tuplas necesitan explorar todas las tuplas existentes por lo que el orden de eficiencia es $O(n)$. En la figura \ref{fig:db-indicehash}, se puede observar este mecanismo.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=20pc]{img/almacenamiento/Indice-hash.png}
+\caption{Funcionamiento de un índice Hash en la localización de tuplas}
+\label{fig:db-indicehash}
+\end{SCfigure}
+
+Sin embargo, este mecanismo no es eficiente para la localización de intervalos de tuplas. En su lugar se propone una implementación de índice basada en un árbol binario balanceado (en adelante B-TREE). Esta estructura es soportada de forma nativa por el gestor de base de datos, pero habitualmente no suele ser empleada a no ser que se indique expresamente, debido a que no es muy eficiente en la localización de tuplas individuales.
+
+Esto es debido a que un índice basado en un B-TREE resuelve la posición de una tupla recorriendo un árbol binario balanceado, ordenado respecto al valor la clave o  que define el índice. Esta organización permite un acceso a una tupla concreta en $O(log n)$. Como se puede observar, supone un orden de eficiencia peor que el índice basado en tabla HASH, y es por ello que no se configura por defecto. Sin embargo, un B-TREE permite recuperar intervalos de datos en $O(2 log n)$, lo cual es mucho más eficiente que el índice basado en HASH.
+
+Por tanto, para recuperar las tuplas comprendidas entre un marco de valores, se tienen que localizar la tuplas correspondientes a dichos valores. Una vez localizadas las tuplas en el árbol, todas las tuplas comprendidas realizando un recorrido en enorden en el árbol desde un valor al otro, son las tuplas que corresponden con esos valores deseados. Además, las tuplas serán recorridas ordenadas según el orden del índice.
+
+En la figura \ref{fig:db-indicebtree} se observa el comportamiento de un índice basado en B-TREE.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=20pc]{img/almacenamiento/Indice-btree.png}
+\caption{Funcionamiento de un índice basado en BTREE en la localización de tuplas}
+\label{fig:db-indicebtree}
+\end{SCfigure}
+
+% \begin{tikzpicture}
+% \node[circle,draw](z){$30$}
+%   child[missing]{}
+%   child{
+%     node[circle,draw]{40} child{node[circle,draw] {20}} child[missing] };
+% \end{tikzpicture}
+
+\subsubsection{Experimento para ver la eficiencia}
+
+Debido a la dificultad para hacer experimentos en el entorno en caliente, se realizó una copia de $100 000$ de tuplas de la tabla \emph{paso} con la que poder experimentar. Se realizan dos tablas exactamente iguales, con la única salvedad de que una tiene implementada un índice basado en BTREE y la otra implementa un índice por defecto.
+
+Se ejecuta en ellas la siguiente consulta SQL:
+\begin{figure}[H]
+\centering
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=SQL,numbers=left,numberstyle={\tiny},stepnumber=1,tabsize=6]
+mysql> select * from paso where tinicio BETwEEN '1352970861377' AND '1353020861377';
+\end{lstlisting}
+\caption[Consulta a ejecutar para la experimentación con índices]{Consulta a ejecutar en la experimentación de índices. Dicha consulta solicita los dispositivos que han pasado entre dos fechas concretas, expresadas en fortado UNIX\_TIMESTAMP con precisión de milisegundos}
+\end{figure}
+
+En la siguiente tabla puede observar la diferencia de tiempo entre ambas consultas:
+
+\begin{table}[H]
+\begin{centering}
+\begin{tabular}{|c|c|}
+\hline 
+\multicolumn{2}{|c|}{Tiempo (segundos)}\tabularnewline
+\hline 
+Índice por defecto & Índice basado en B-TREE\tabularnewline
+\hline 
+\hline 
+1.96 & 0.50\tabularnewline
+\hline 
+\end{tabular}
+\caption{Tiempos en la comparativa entre índice por defecto e índice basado en B-TREE}
+\end{centering}
+\end{table}
+
+Se hace necesario recordar que en nuestro gestor de base de datos la caché de consultas está deshabilitada, por lo que en ningún momento influye en la petición. Además, de que son tablas independientes.
+
+Sin embargo, al estar solicitando las tuplas, se está añadiendo tiempo de ``transito'', por lo que hacemos el siguiente experimento con el fin de minimizar el tiempo dedicado a tareas que no sean la localización de los nodos. Se ejecuta por tanto en ellas la siguiente consulta SQL:
+
+\begin{figure}[H]
+\centering
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=SQL,numbers=left,numberstyle={\tiny},stepnumber=1,tabsize=6]
+mysql> select count(*) from paso where tinicio BETwEEN '1352970861377' AND '1353020861377';
+\end{lstlisting}
+\caption[Consulta a ejecutar para la experimentación con índices II]{Consulta a ejecutar en la experimentación de índices II. Dicha consulta cuenta el número dispositivos que han pasado entre dos fechas concretas, expresadas en fortado UNIX\_TIMESTAMP con precisión de milisegundos}
+\end{figure}
+
+En este caso, al no estar devolviendo las tuplas encontradas, sólo contándolas el tiempo de transmisión de la petición se reduce al mínimo (un valor entero). Ejecutamos la sentencia en las dos tablas de las que disponemos.
+
+\begin{table}[H]
+\begin{centering}
+\begin{tabular}{|c|c|}
+\hline 
+\multicolumn{2}{|c|}{Tiempo (segundos)}\tabularnewline
+\hline 
+Índice por defecto & Índice basado en B-TREE\tabularnewline
+\hline 
+\hline 
+1.93 & 0.01\tabularnewline
+\hline 
+\end{tabular}
+\caption{Tiempos en la comparativa entre índice por defecto e índice basado en B-TREE II}
+\end{centering}
+\end{table}
+
+Cómo se puede observar, el tiempo necesario para localizar nos nodos entre dos intervalos es irrisorio comparando el B-TREE con un índice por defecto. Notar, que el tiempo entre los dos experimentos es tan parecido en el caso del índice HASH, es debido a que MySQL procesa las transmisiones según va recuperando datos para transmitir. Es decir, una vez localizado una tupla empieza a transmitirla.
+
+Se puede ver por tanto, que el empleo de un índice basado en B-TREE para el tratamiento de la ventana temporal es una herramienta muy eficiente. Y estamos hablando de un conjunto de datos relativamente pequeño frente a las búsquedas en millones de tuplas que esperamos realizar en el sistema.
+
+Un problema que suelen acarrear los índices basado en B-TREE, es que las inserciones en nodos intermedios son bastante menos eficientes, debido a que se hace necesario rebalancear el árbol binario. En nuestro sistema, por fortuna, raravez se producen insercciones en nodos intermedios ya que los valores insertados suelen pertenecer a instantes de tiempo más modernos que los almacenados en la base de datos y la inserción en la última rama supone un rebalanceo mucho más eficiente. Por tanto, nuestro sistema no se ve gravemente perjudicado por el empleo de este índice.
+
+A día de hoy, con más 74 millones de tuplas en la base de datos, el tiempo de búsqueda en dicho intervalo sigue siendo inferior a los 0.01 segundos.
+
+\subsection{Optimización de consultas de recurrencias}
+\label{sec:consultasrecurrencias}
+
+Además del uso de las ventanas temporales en la mayoría de las consultas realizadas a nuestra base de datos, parte de nuestro cómputo residía en la búsqueda de recurrencias de un dispositivo capturado en distintos nodos. Supongamos así que un vehículo pasa por los nodos A y B en un corto periodo de tiempo y nos interesa conocer el tiempo que ha tardado en ir desde un nodo al otro. A esta ruta de un dispositivo entre dos nodos, lo denominamos trazas.
+
+Las trazas resultan muy interesantes de estudiar, pues nos permiten obtener estadísticos interesantes sobre el flujo de movimiento de los vehículos dentro del mapa donde se hayan ubicados los nodos. Sim embargo, computacionalmente raelizar dicha búsqueda en nuestro conjunto de datos supone un orden de eficiencia $O(n^2)$ pues para cada tupla se debe buscar entre las otras tuplas si el \texttt{idDispositivo} es el mismo. Más adelante, en la Sección \ref{sec:procedimientosdeprocesamiento} se abordará un procedimiento SQL que optimiza este tipo de consultas para la búsqueda de todas las trazas.
+
+Sin embargo, la localización de una sola traza (su existencia o inexistencia) en un entorno no optimizado resulta inviable. Ejecutemos la siguiente consulta SQL para localizar las dos primeras trazas existentes en todo nuestro conjunto de datos de pruebas, que recordemos es de $100 000$ registros.
+
+\begin{figure}[H]
+\centering
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=SQL,numbers=left,numberstyle={\tiny},stepnumber=1,tabsize=6]
+mysql> SELECT t1.idDispositivo, t1.idNodo as Origen,t1.tinicio as Origen_inicio, t1.tfin as Origen_fin, t1.tfin-t1.tinicio as Origen_dif, t2.idNodo as Destino, t2.tinicio as Destino_Inicio, t2.tfin as Destino_fin, t2.tfin-t2.tinicio as Destino_dif, from_unixtime(t1.tinicio/1000) as Origen_fecha, from_unixtime(t2.tinicio/1000) as Destino_fecha, t2.tinicio - t1.tinicio as Diferencia FROM paso as t1 INNER JOIN paso as t2 ON t1.idDispositivo = t2.idDispositivo and t1.idNodo <> t2.idNodo and t2.tinicio - t1.tinicio BETWEEN 0 AND 3600000 LIMIT 2;
+\end{lstlisting}
+\caption[Consulta a ejecutar para la experimentación con índices III]{Consulta a ejecutar en la experimentación de índices III. Dicha consulta busca en la base de datos dispositivos que hayan sido detectados por dos nodos distintos en una diferencia de tiempo de no más de una hora, devolviendo las 2 primeras ocurrencias.}
+\label{sql:consulta3}
+\end{figure}
+
+Observar que en la consulta hacemos uso del mecanismo INNER JOIN para cotejar la tabla sobre si misma. Mecanismos de consulta como este nos hicieron decantarnos por un sistema SQL frente a las alternativas NoSQL disponibles en el mercado.
+
+Se ejecuta la consulta superior, obteniéndose un tiempo de $58.69 s$ que resulta demasiado elevado como para poder acercar al tiempo real este tipo de procesamiento.
+
+Se realiza por tanto un estudio, para buscar la manera de optimizar la ejecución de dichas consultas. Es necesario notar que toda optimización realizada mediante la creación de índices tiene un consumo de espacio en memoria para alojar y mantener dichos índices. Es por ello que en la Sección \ref{sec:reducciondesize} se realiza un estudio del espacio en disco por tupla, con el fin de intentar minimizar el espacio ocupado de forma inútil.
+
+Se decide por tanto realizar un índice para el \texttt{idDispositivo} de forma que la recuperación de las tuplas con igual \texttt{idDispositivo} sea mucho más eficiente. De esta forma se le proporciona al gestor de base de datos de una estructura donde para cada idDispostivo puede localizar las tuplas que hacen referencia a este dispositivo en concreto.
+
+Ejecutamos nuevamente la consulta reflejada en la Figura \ref{sql:consulta3} habiendo realizado la optimización mediante un índice para el \texttt{idDispositivo}, consiguiendo un tiempo de $0.02 s$. Con la configuración de este mecanismo, se ha conseguido casi una ganancia de 3000 magnitudes en la eficiencia de la ejecución de este tipo de consultas, acercado el cómputo a prácticamente un tiempo constante, lo que nos permite realizar este cómputo prácticamente en tiempo real.
+
+\subsection{Particionado de datos}
+
+Durante el diseño del esquema de la base de datos se intentó simplificar el modelo lo máximo posible, minimizando el número de tablas en lo posible. Es por ello que se decidió que la tabla \emph{paso} sería el gran contenedor que almacenase toda la información sobre el paso de dispositivos. Sin embargo, tal decisión nos imponía ciertas limitaciones debido a las características de las tablas. MySQL por defecto impone una limitación en el tamaño de archivo de 4GB como tamaño máximo. Esto limita el tamaño de una tabla InnoDB a 4GB como máximo de datos.
+
+\begin{SCfigure}[20][h]
+\centering
+\includegraphics[width=10pc]{img/almacenamiento/sin_particionamiento.png}
+\caption{Almacenamiento de una tabla sin realizar particionado}
+\label{fig:sin-particionamiento}
+\end{SCfigure}
+
+Para evitar esta limitación, MySQL dispone de un procedimiento de particionado, que permite particionar una tabla hasta en 1024 ficheros físicos acción que es necesario indicarle al gestor de base de datos, pues no la aborda de por defecto. Además, desde la versión 5.1 de MySQL es posible indicarle al gestor de base de datos como se desea que se realice el particionado de datos, pudiendo elaborar mecanismos muy eficientes si se aprovecha el sistema de particionado para emplear el principio de localidad espacial en disco en las consultas más frecuentes. 
+
+En la Figura \ref{fig:sin-particionamiento} se observa como los datos son almacenados en disco según van llegando las peticiones de inserción. Recordemos que el proceso de sincronización mostrado en el Capítulo \ref{chap:actualizadorlocal} presenta un proceso en el cual se realizan peticiones para una ventana temporal para cada nodo de forma secuencia. Es por ello, que los identificadores de nodos se presentan de forma muy parecida a la que se aprecia en la Figura \ref{fig:sin-particionamiento}, donde cada número indica el nodo que ha capturado el dispositivo. 
+
+En la figura se ha potenciado, pero se hace evidente observar que se realizarán rachas en las cuales las tuplas consecutivas pertenezcan al mismo nodo (pues han sido introducidas una tras otras). Este comportamiento, hace que para leer los datos de una ventana temporal mayor que la ventana de inserción, sea necesario leer en el disco varias zonas no secuenciales.
+
+Usando el mecanismo de particionado ofrecido por MySQL, hacemos corresponder un nodo a cada partición de datos, de forma como se observa en la Figura \ref{fig:con-particionamiento}. Esto nos permite que todas las tuplas (pasos) correspondiente al mismo nodo se almacenen en el mismo archivo físico, y por tanto, es esperable que se encuentren en sectores consecutivos del disco duro. Además, aumentamos por 1024 el tamaño máximo de almacenamiento como se muestra en la sección \ref{sec:reducciondesize}.
+
+Pero además, supone otra ventaja adicional. Debido a nivel físico son archivos distintos, MySQL es capaz de trabajar con bloqueos a nivel de partición. De esta manera, para el gestor de base de datos es posible bloquear una partición para escritura exclusiva, conservando accesible el resto de particiones.
+
+Además, en consultas como la presentada en la Sección \ref{sec:consultasrecurrencias} se ven muy beneficiadas debido al sistema RAID1 con el que se ha dotado al servidor como se explica en la Sección \ref{sec:raid} pues el gestor puede leer cada partición de un disco distinto, ya que a nivel físico son archivos distintos.
+
+Por último, este es un mecanismo que se está potenciando y mejorando en las versiones de pruebas de MySQL debido a las ventajas que supone.
+
+En nuestro sistema, hemos realizado un particionamiento de 64 unidades físicas, quedando aún posibilidad de emplear el particionamiento o bien para incorporar mayor cantidad de nodos, o bien para hacer uso de esta potente técnica de particionamiento en otros aspectos de los datos.
+
+\begin{SCfigure}[20][h]
+\centering
+\includegraphics[width=24pc]{img/almacenamiento/con_particionamiento.png}
+\caption{Funcionamiento de un tabla particionada en función del idNodo.}
+\label{fig:con-particionamiento}
+\end{SCfigure}
+\clearpage
+\subsection{Reducción del tamaño de las bases de datos}
+\label{sec:reducciondesize}
+
+Normalmente el tamaño de que ocupa una base de datos no suele preocupar a los diseñadores de la misma. Sin embargo, dada la naturaleza del proyecto ha sido un aspecto que también ha sido cuidado de forma meticulosa. Se presenta a continuación los tamaños asociados a la tabla pasos presentada al comienzo de este capítulo:
+
+\begin{table}[H]
+\begin{centering}
+\begin{tabular}{|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{2.1cm}|}
+\hline 
+\multirow{2}{*}{Tuplas} & \multicolumn{4}{c|}{Tamaño (Bytes)}\tabularnewline
+\cline{2-5} 
+ & Tupla & Total & Índice & Libre\tabularnewline
+\hline 
+\hline 
+9632529 & 101 & 980418560  & 0 & 2721054720\tabularnewline
+\hline 
+\end{tabular}
+\par\end{centering}
+
+\smallskip{}
+
+
+\begin{centering}
+\begin{tabular}{|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{2.1cm}|}
+\hline 
+\multirow{2}{*}{Tuplas} & \multicolumn{4}{c|}{Tamaño (MBytes)}\tabularnewline
+\cline{2-5} 
+ & Tupla & Total & Índice & Libre\tabularnewline
+\hline 
+\hline 
+9632529 & 101 & 935MB  & 0 & 2595 MB\tabularnewline
+\hline 
+\end{tabular}
+\par\end{centering}
+
+\begin{centering}
+\caption{Tamaños asociados a la tabla paso sin optimizaciones}
+
+\par\end{centering}
+
+\end{table}
+
+A continuación se presenta la tabla pasos una vez realizadas las optimizaciones presentadas a lo largo de este capítulo, es decir, los índices para marcos temporales y dispositivos y el mecanismo de particionado.
+
+\begin{table}[H]
+\begin{centering}
+\begin{tabular}{|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{2.1cm}|}
+\hline 
+\multirow{2}{*}{Tuplas} & \multicolumn{4}{c|}{Tamaño (Bytes)}\tabularnewline
+\cline{2-5} 
+ & Tupla & Total & Índice & Libre\tabularnewline
+\hline 
+\hline 
+9632529 & 101 & 980418560 & 1824426050 & 160353640529 \tabularnewline
+\hline 
+\end{tabular}
+\par\end{centering}
+
+\smallskip{}
+
+
+\begin{centering}
+\begin{tabular}{|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{2.1cm}|}
+\hline 
+\multirow{2}{*}{Tuplas} & \multicolumn{4}{c|}{Tamaño (MBytes)}\tabularnewline
+\cline{2-5} 
+ & Tupla & Total & Índice & Libre\tabularnewline
+\hline 
+\hline 
+9632529 & 101 & 935MB  & 1739 MB & 152925 MB\tabularnewline
+\hline 
+\end{tabular}
+\par\end{centering}
+
+\begin{centering}
+\caption[Tamaños asociados a la tabla paso con las optimizaciones]{Tamaños asociados a la tabla paso con las optimizaciones presentadas anteriormente, es decir, los índices para ventanas temporales y para la gestión eficiente de reincidencia de dispositivos, así como el sistema de particionado.}
+
+\par\end{centering}
+
+\end{table}
+
+
+Para empezar observemos que se ha mejorado la capacidad máxima de nuestra tabla de poco más de $2.5GB$ a casi de $150GB$ de almacenamiento para la tabla pasos. Recordemos que sólo hemos empleado un particionamiento de 64 bloques físicos. Si realizásemos un particionamiento de lo máximo permitido actualmente por MySQL, tendríamos una capacidad total de $2.33TB$.
+
+Sin embargo, como se anunció anteriormente, los índices ocupan memoria para ser almacenados, por lo que se ha pasado de no gastar memoria en los índices a estar almacenando $1739MB$ para índices por cada $935MB$ de datos. Se observa que el tamaño de datos por cada tupla es de $101 bytes$ para los datos y unos aproximados $189 bytes$ para la estructura de índices.
+
+Se realiza un estudio con el fin de intentar reducir el tamaño de los índices y de la tupla. Se realiza una optimización en los tipos de datos empleados en las tuplas, lo cual permite reducir de $101 bytes$ a $93 bytes$ de tamaño cada tupla.
+
+\begin{table}[H]
+\begin{centering}
+\begin{tabular}{|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{2.1cm}|}
+\hline 
+\multirow{2}{*}{Tuplas} & \multicolumn{4}{c|}{Tamaño (Bytes)}\tabularnewline
+\cline{2-5} 
+ & Tupla & Total & Índice & Libre\tabularnewline
+\hline 
+\hline 
+9632529 & 93 & 896614400 & 1679917056 & 174147502080 \tabularnewline
+\hline 
+\end{tabular}
+\par\end{centering}
+
+\smallskip{}
+
+
+\begin{centering}
+\begin{tabular}{|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{2.1cm}|}
+\hline 
+\multirow{2}{*}{Tuplas} & \multicolumn{4}{c|}{Tamaño (MBytes)}\tabularnewline
+\cline{2-5} 
+ & Tupla & Total & Índice & Libre\tabularnewline
+\hline 
+\hline 
+9632529 & 93 & 855 MB  & 1602 MB & 166080 MB\tabularnewline
+\hline 
+\end{tabular}
+\par\end{centering}
+
+\begin{centering}
+\caption[Tamaños asociados a la tabla paso con las optimizaciones y reducido el tamaño por tupla]{Tamaños asociados a la tabla paso con las optimizaciones presentadas anteriormente y realizando una optimización para reducir el tamaño por tupla.}
+
+\par\end{centering}
+
+\end{table}
+
+Para entender como se logra reducir el tamaño del índice, es necesario entender como funciona un índice a nivel interno. Hemos comentado que cada índice permite referenciar de forma eficiente un tupla concreta, ya sea mediante una función hash o realizando un recorrido en un árbol binario. Sin embargo, hemos obviado cómo se referencia una tupla de forma única. Para ello se hace uso del índice primario (\texttt{PRIMARY KEY}).
+
+Visualizando la Figura \ref{fig:db-paso} podemos observar que el índice primario de nuestra tabla \emph{paso} implica la utilización del \texttt{idNodo}, \texttt{idDispositivo} y el \texttt{tinicio}. Esto supone que en la entrada de cada índice, tenemos que almacenar los bytes correspondientes a estos tres campos, pues son los que permiten identificar una tupla. Dado los tipos de datos empleados, consideramos que estamos gastando unos $58 bytes$ para referenciar cada tupla.
+
+Se plantea por tanto la creación de un ídentificador adicional que permita identificar cada tupla. Se elige un tipo de dato \texttt{UNSIGNED BIGINT} debido a que es el tipo de datos que permite referenciar el mayor cantidad de tuplas y que supone un coste de sólo $8 bytes$.
+
+\begin{table}[H]
+\begin{centering}
+\begin{tabular}{|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{2.1cm}|}
+\hline 
+\multirow{2}{*}{Tuplas} & \multicolumn{4}{c|}{Tamaño (Bytes)}\tabularnewline
+\cline{2-5} 
+ & Tupla & Total & Índice & Libre\tabularnewline
+\hline 
+\hline 
+9632529 & 99 & 957251584 & 897024000 & 174147502080 \tabularnewline
+\hline 
+\end{tabular}
+\par\end{centering}
+
+\smallskip{}
+
+
+\begin{centering}
+\begin{tabular}{|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{1.8cm}|p{2.1cm}|}
+\hline 
+\multirow{2}{*}{Tuplas} & \multicolumn{4}{c|}{Tamaño (MBytes)}\tabularnewline
+\cline{2-5} 
+ & Tupla & Total & Índice & Libre\tabularnewline
+\hline 
+\hline 
+9632529 & 99 & 913 MB  & 855 MB & 166080 MB\tabularnewline
+\hline 
+\end{tabular}
+\par\end{centering}
+
+\begin{centering}
+\caption[Tamaños asociados a la tabla paso con las optimizaciones, reducido el tamaño por tupla e implementado en nuevo índice]{Tamaños asociados a la tabla paso con las optimizaciones presentadas anteriormente, realizando una optimización para reducir el tamaño por tupla e implementando un nuevo índice}
+
+\par\end{centering}
+
+\end{table}
+
+Realizando esta optimización se reduce el tamaño del índice a $855 MB $ frente a los $1602 MB$ que ocupaba anteriormente. Lo cual supone un ahorro significativo de memoria.
+
+\section{Procedimientos de procesamiento de datos}
+\label{sec:procedimientosdeprocesamiento}
+
+Se presentan a continuación dos procedimientos para el procesamiento de datos: para obtener resúmenes de los datos respecto a intervalos de tiempo y el método que calcula las trazas.
+
+\subsection{Procedimiento: Agrupación Pasos Por intervalos}
+\label{sub:sec:procedimientosSQL}
+
+Este procedimiento permite calcular de forma eficiente los dispositivos que han sido localizados en un intervalo de tiempo, agrupados según una ventana temporal. Es decir, permite por ejemplo calcular los vehículos que han pasado en la última semana, agrupándolos en intervalos de 1 hora, o intervalos de 1 día.
+
+Su funcionamiento eficiente, permite el tratamiento de los datos de forma rápida para la utilización en métodos más complicados, como los de predicción o los de subida a la nube.
+
+Se presentan tres alternativas, en función de si se desean los intervalos de un solo nodo, de todos los nodos, o independientemente de los nodos.
+
+\subsubsection{Un solo nodo}
+
+Este procedimiento permite, para un nodo indicado, obtener un resumen del tránsito de dispositivos agrupamos por un intervalo de tiempo especificado.
+
+\begin{figure}[H]
+\centering
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=SQL,numbers=left,numberstyle={\tiny},stepnumber=1,tabsize=6]
+CREATE DEFINER=`root`@`localhost` PROCEDURE `agrupaPasosPorIntervalosNodo`(in fechaMIN Varchar(40), in fechaMAX Varchar(40), in intervalo INT, in nodo BIGINT(20) )
+BEGIN
+	DECLARE inter INT DEFAULT intervalo*1000*60;
+	SELECT FROM_UNIXTIME(round(tinicio/inter)*inter/1000) as Intervalo ,  count(*)
+	FROM paso
+		WHERE 
+			idNodo = nodo
+			AND tinicio
+			BETWEEN  UNIX_TIMESTAMP(fechaMIN)*1000
+				AND  UNIX_TIMESTAMP(fechaMAX)*1000
+		
+	GROUP BY
+		round(tinicio/inter)
+	#INTO OUTFILE '/tmp/pasos.csv'
+	#FIELDS TERMINATED BY ','
+	#ENCLOSED BY '"'
+	#LINES TERMINATED BY '\n'
+;
+END
+\end{lstlisting}
+\caption[Procedimiento agrupamiento pasos por intervalos I]{Procedimiento para el agrupamiento de los pasos por intervalos de tiempo, para un solo nodo.}
+\label{sql:consulta3}
+\end{figure}
+
+\subsubsection{Todos los nodos}
+
+Este procedimiento permite, para todos los nodos, obtener un resumen del tránsito de dispositivos agrupamos por un intervalo de tiempo especificado. Este procedimiento no distingue entre nodos, es decir, no indica cuantos dispositivos han pasado por cada nodo en el intervalo determinado.
+
+\begin{figure}[H]
+\centering
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=SQL,numbers=left,numberstyle={\tiny},stepnumber=1,tabsize=6]
+CREATE DEFINER=`root`@`localhost` PROCEDURE `agrupaPasosPorIntervalos`(in fechaMIN Varchar(40), in fechaMAX Varchar(40), in intervalo INT )
+BEGIN
+	DECLARE inter INT DEFAULT intervalo*1000*60;
+	SELECT FROM_UNIXTIME(round(tinicio/inter)*inter/1000) as Intervalo ,  count(*)
+	FROM paso
+		WHERE tinicio
+			BETWEEN  UNIX_TIMESTAMP(fechaMIN)*1000
+				AND  UNIX_TIMESTAMP(fechaMAX)*1000
+	GROUP BY
+		round(tinicio/inter); 
+END
+\end{lstlisting}
+\caption[Procedimiento agrupamiento pasos por intervalos II]{Procedimiento para el agrupamiento de los pasos por intervalos de tiempo, para todos los nodos sin distinción entre ellos.}
+\label{sql:consulta3}
+\end{figure}
+
+\subsubsection{Nodos separados}
+
+Este procedimiento permite, para todos los nodos, obtener un resumen del tránsito de dispositivos agrupamos por un intervalo de tiempo especificado, distinguiendo la cantidad de dispositivos que ha detectado cada nodo concreto.
+
+\begin{figure}[H]
+\centering
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=SQL,numbers=left,numberstyle={\tiny},stepnumber=1,tabsize=6]
+CREATE DEFINER=`root`@`localhost` PROCEDURE `agrupaPasosPorIntervalosNodosSeparados`(in fechaMIN Varchar(40), in fechaMAX Varchar(40), in intervalo INT)
+BEGIN
+DECLARE inter INT DEFAULT intervalo*1000*60;
+DECLARE corte INT DEFAULT 19;
+
+IF intervalo >= 1440 THEN SET corte = 10; END IF;
+
+SELECT SUBSTR(FROM_UNIXTIME(truncate(tinicio/inter,0)*inter/1000),1,corte) as Fecha, __paso.idNodo ,  count(*) as Total, latitud,longitud,nombre,poligono
+	FROM __paso, nodo
+		WHERE
+			tinicio
+			BETWEEN  UNIX_TIMESTAMP(fechaMIN)*1000
+				AND  UNIX_TIMESTAMP(fechaMAX)*1000
+		    AND
+            __paso.idNodo = nodo.idNodo
+	GROUP BY
+		idNodo,
+		truncate(tinicio/inter,0)
+	ORDER BY Fecha ASC;
+ 
+END
+\end{lstlisting}
+\caption[Procedimiento agrupamiento pasos por intervalos III]{Procedimiento para el agrupamiento de los pasos por intervalos de tiempo, para todos los nodos con distinción entre ellos.}
+\label{sql:consulta3}
+\end{figure}
+
+\subsection{Procedimiento: Cálculo de trazas para pasos entre nodos}
+
+Este procedimiento permite el cálculo de las trazas que han ocurrido entre los diversos nodos del sistema en una ventana temporal, con un límite de tiempo determinado. Este límite indica cuando tiempo puede pasar como máximo en la detección en dos nodos distintos para ser considerado una traza.
+
+Este procedimiento hace uso de un mecanismo de tablas temporales basadas en memoria que es bastante eficiente, debido a que no requiere volcar los datos que está calculando en ningún archivo físico.
+
+El uso de este procedimiento es muy eficiente, al basarse en el empleo de la técnica MapReduce para dividir los conjuntos de datos en partes más pequeñas, procesarlas e integrarlas posteriormente en el conjunto de datos finales. Lo que habitualmente se llama reduce y vencerás. Para ello, lo que hace es realizar cortes del tamaño de la ventana temporal más el tiempo que determina la existencia o no de traza y va procesando esas ventanas una a una, en lugar de realizar el \texttt{JOIN} sobre todo el conjunto de datos.
+
+A pesar de su eficiencia, la búsqueda de trazas sigue siendo costosa en tiempo de cómputo, debido a lo cual aún no se ofrece en tiempo real la información de las trazas.
+
+\begin{figure}[H]
+\centering
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=SQL,numbers=left,numberstyle={\tiny},stepnumber=1,tabsize=6]
+CREATE DEFINER=`root`@`localhost` PROCEDURE `localizaTrazasNodos2`(in fechaMIN Varchar(40), in fechaMAX Varchar(40), in intervalo INT)
+BEGIN
+
+DECLARE inter INT DEFAULT intervalo*1000*60;
+DECLARE corte INT DEFAULT 19;
+DECLARE fMax bigint(20) DEFAULT UNIX_TIMESTAMP(fechaMAX)*1000;
+DECLARE fMin bigint(20) DEFAULT UNIX_TIMESTAMP(fechaMIN)*1000;
+DECLARE i bigint(20) DEFAULT fMIN;
+
+IF intervalo >= 1440 THEN SET corte = 10; END IF;
+
+DROP TEMPORARY TABLE IF EXISTS trazas;
+CREATE TEMPORARY TABLE trazas  (Origen bigint(20), tiempo bigint(20), Destino bigint(20), Destino_tiempo bigint(20)) ENGINE=MEMORY;
+
+WHILE (i+inter<=fMaX) DO
+	INSERT INTO trazas
+		SELECT STRAIGHT_JOIN
+		t1.idNodo as Origen,
+		t1.tinicio as tiempo,
+		t2.idNodo as Destino,
+		t2.tinicio as Destino_tiempo
+	FROM
+		(SELECT idNodo,tinicio,idDispositivo FROM __paso
+			WHERE tinicio
+					BETWEEN  i
+					AND  i+inter 
+		) as t1
+		INNER JOIN 
+			(SELECT idNodo,tinicio,idDispositivo FROM __paso 
+				WHERE tinicio
+					BETWEEN  i-inter
+					AND  i+inter+inter 
+			) as t2 
+			ON	
+				t1.idDispositivo = t2.idDispositivo 
+				AND t1.idNodo <> t2.idNodo
+				AND (t2.tinicio - t1.tinicio) BETWEEN 0 AND inter;
+
+	SET i = i + inter;
+END WHILE;
+
+SELECT t.Fecha, t.Origen, t.Destino, t.total, t.Diferencia, t1.latitud, t1.longitud, t2.latitud, t2.longitud  FROM
+		(SELECT 	SUBSTR(FROM_UNIXTIME(truncate(tiempo/inter,0)*inter/1000),1,corte) as Fecha,
+			Origen,
+			Destino,
+			count(*) as total,
+			avg(Destino_tiempo - tiempo)/1000 as Diferencia
+		FROM trazas
+		GROUP BY Origen, Destino, truncate(tiempo/inter,0)
+		ORDER BY fecha DESC) as t
+INNER JOIN (SELECT latitud,longitud,idNodo from nodo) as t1 ON t.Origen = t1.idNodo
+INNER JOIN (SELECT latitud,longitud,idNodo from nodo) as t2 ON t.Destino = t2.idNodo
+
+;
+END
+\end{lstlisting}
+\caption[Procedimiento calculo de trazas]{Procedimiento el cálculo de trazas entre pasos.}
+\label{sql:consulta3}
+\end{figure}
+
+\vfill
+\cleardoublepage
+

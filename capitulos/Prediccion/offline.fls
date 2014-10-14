@@ -1,0 +1,13 @@
+PWD /home/antares/Dropbox/Facultad/Máster ICR/TFM/Memoria/capitulos/Prediccion
+INPUT /etc/texmf/web2c/texmf.cnf
+INPUT /usr/share/texmf/web2c/texmf.cnf
+INPUT /usr/share/texlive/texmf-dist/web2c/texmf.cnf
+INPUT /var/lib/texmf/web2c/pdftex/pdflatex.fmt
+INPUT offline.tex
+OUTPUT offline.log
+INPUT /usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsl10.tfm
+OUTPUT offline.pdf
+INPUT /var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmti10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm

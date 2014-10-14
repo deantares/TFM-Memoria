@@ -1,0 +1,279 @@
+\myChapter{Desarrollo Web y Móvil}\label{chap:web}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+En los anteriores capítulos hemos mostrado el sistema de subida de datos a la Nube Goolge Fusion Tables así como la API REST que nos permite acceder a los datos desde aplicaciones de terceros. Adicionalmente a esta API, se han desarrollado varios servicios Web que permite la creación de mecanismos avanzados para la cración de tablas, gráficos y mapas embebidos.
+
+Sobre estos servicios se ha desarrollado varias plataformas web que permite la difusión de los datos: una página principal de información general sobre el proyecto, un panel de visualización de los datos, un visor de eventos. Adicionalmente se presenta el panel de administración de los datos de Google Fusion Tables, que permite la gestión de los datos y su autoría.
+
+Por último, se presenta la aplicación móvil desarrollada en Android usando tecnología HTML. 
+
+\section{Servicios Web} 
+
+Si bien disponemos de una API REST para el acceso y manipulación de los datos alojado en la nube, se ha desarrollado una capa de Servicios Web que hace uso de dicha API para crear elementos de representanción de datos. Al hacerlo mediante una capa externa, en lugar de gestionarlo en la propia aplicación, se consigue un entorno uniforme y modular. Una actualización en un servicio web, implica que todas las demás plataformas y servicios que hacen uso de dicho servicio tengan al instante la mejora o nueva funcionalidad.
+
+Además, se consigue consolidar una imagen y mecánicas de uso comunes a todos las plataformas de forma fácil y sencilla.
+
+A continuación, se presentan los 3 tipos de visualización básicos empleados, mostrando para cada uno algunos ejemplos de código así como capturas de pantalla y explicaciones de la funcionalidad.
+
+\subsection{Tablas}
+
+La forma más básica de representar información es mediante una estructura tabular. Se provee de un servicio web básico capaz de procesar una consulta SQL en una tabla HTMl. Parte del código de dicho servicio se puede encontrar en la Figura \ref{fig:ejemploUsoFusionTables-Tabla}.
+
+Se ha creado una capa Javascript por encima de la tabla HTML para dotarle de funcionalidad adicional no nativa, como la posibilidad de aplicar filtros, búsqueda y ordenación por columnas
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=26pc]{img/web/sw-tabla.png}
+\caption{Representación en modo de tabla de los datos}
+\end{SCfigure}
+
+Se hace necesario destacar que la petición de información y procesamiento de la tabla es realizado en el lado del cliente, al estar realizada enteramente en Javascript.
+
+\subsection{Gráficos}
+
+Si bien una tabla puede servir para el análisis de los datos, estos adquieren mayor vistosidad en un gráfico. Debido a la facilidad de integración de Google Fusion Tables con Google Chart, es posible realizar gráficos de forma rápida y muy vistosa.
+
+Se proveen dos tipos de gráficos de ejemplo, uno basado en tecnología CANVAS y otro basado en tecnología FLASH a modo de ejemplo.
+
+\subsubsection{Histórico: serie temporal}
+
+Este tipo de gráfico permite mostrar una serie temporal de forma interactiva, donde el usuario puede seleccionar. Consta de dos zonas, la inferior muestra toda la serie así como una ventana temporal, que permite hacer zoom en la zona principal en la serie.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=26pc]{img/web/sw-grafico1.png}
+\caption{Gráfico de serie temporal}
+\end{SCfigure}
+
+\subsubsection{Gráfico interativo}
+
+Este tipo de gráfico sirven para contrastar la información de distintas columnas de la tabla, así como ofrecer animaciones de las vistas de los datos que pueden reproducirse (como una película) para mostrar la evolución a lo largo del tiempo.
+
+Se puede elegir la columna representada por cada eje de la gráfica (indicando además si sigue un comportamiento lineal o logarítmico). Se pueden configurar los colores y tamaños de las representaciones para que sean automáticos, distinto para cada ``tupla'' o bien se correspondan con una escala de color basada en alguna columna.
+
+Se disponen de tres gráficos a seleccionar: gráfico de dispersión XY, gráfico de barras y serie temporal. Las configuraciones realizadas en cada entorno son compartidas, lo que que permite cambiar entre un tipo de visualización a otro de forma inmediata.
+
+Sin embargo, este tipo de gráfica está limitada a entornos de escritorio con soporte a tecnología FLASH, por lo que no es soportado por dispositivos móviles.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=20pc]{img/web/sw-anima1.png}
+\includegraphics[width=20pc]{img/web/sw-anima2.png}
+\includegraphics[width=20pc]{img/web/sw-anima3.png}
+\includegraphics[width=20pc]{img/web/sw-anima4.png}
+\caption{Animación de la gráfica interativa}
+\end{SCfigure}
+
+\subsection{Mapas}
+
+Este mapa permite navegar entre las fechas y horas 
+
+Ya hemos visto con anterioridad lo fácil que resulta integrar un mapa en Google Maps con una fuente de datos basada en Google Fusion Tables.
+
+Se monta un entorno basado en Google Maps en el que se añade funcionalidad extra para la visualización y manipulación de los datos:
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=20pc]{img/web/sw-mapa.png}
+\caption{Mapa principal de visualización de los datos}
+\end{SCfigure}
+
+Sobre dicho mapa se distinguen 4 zonas, que permiten manipular y navegar por los datos a visualizar:
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=20pc]{img/web/sw-mapa2.png}
+\caption{Mapa principal de visualización de los datos: Zonas de control}
+\end{SCfigure}
+
+\subsubsection{A: Zona de selección de fecha}
+
+Permite ajustar la fecha para la visualización de los datos. Por defecto muestra la fecha actual.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=16pc]{img/web/sw-mapa-fecha.png}
+\caption{Mapa principal de visualización de los datos: Selector de fecha}
+\end{figure}
+
+\subsubsection{B: Zona de Información Adicional}
+
+Cuando un nodo es seleccionado, muestra la información relativa a dicho nodo, así como ofrece la posibilidad de mostrar los gráficos relativos a la serie temporal de dicho nodo.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=16pc]{img/web/sw-mapa-nodo.png}
+\caption{Mapa principal de visualización de los datos: Información del nodo}
+\end{figure}
+
+\subsubsection{C: Leyenda de colores}
+
+Muestra la equivalencia en dispositivos detectados de la escala de colores empleada en la visualización de los datos.
+
+\subsubsection{D: Selector de hora}
+
+El selector de hora permite elegir la hora de la visualización de los datos. Los botones [1] y [3] permiten decrementar e incrementar la hora respectivamente, mientras que el botón [2] activa el modo de reproduccíón automática. El selector vertical [4] permite también ajustar de forma más rápida la hora que se desea visualizar.
+
+Por defecto, muestra la hora actual.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=16pc]{img/web/sw-mapa-hora.png}
+\caption{Mapa principal de visualización de los datos: Selector de hora}
+\end{figure}
+
+\subsubsection{E: Opciones de configuración}
+
+Permiten ajustar la velocidad de las animaciones, el tipo de sensor que se muestra, así como permitir el ``viaje rápido'' entre las zonas en las que se encuentran los nodos.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=6pc]{img/web/sw-mapa-opciones.png}
+\caption{Mapa principal de visualización de los datos: Opciones}
+\end{figure}
+
+\clearpage
+
+\section{Plataformas Web}
+
+Una vez provistos de los mecanismos de representación de datos presentados anteriormente, se muestran las Plataformas Web desplegadas para el proyecto.
+
+Cabe destacar en todos ellos un aspecto común, y es el empleo de una estructura Responsive Design, la cual permite ajustar de forma dinámica los contenidos visuales para ajustarlo al tamaño del dispositivo de forma fluida.
+
+De esta forma, con una misma implementación se permite dar cabida a todos los entornos existentes.
+
+\subsection{Página principal: Wordpress}
+
+La página principal del proyecto, basada en una instalación de Wordpress en el servidor configurado en el Capítulo \ref{chap:servidor}. Esta página ha sido usada como Landing Page del proyecto, ofreciendo la información tanto legal como del avance del proyecto. Además, ha servido de punto de contacto con los potenciales usuarios.
+
+Dispone de la información relativa al proyecto, así como enlaces a los servicios de datos que serán presentados a lo largo de este capítulo.
+
+Adicionalmente en esta página se recogen algunas de las series sociales en las que se ha tenido presencia del proyecto, como se tratará en el Capítulo \ref{chap:rs}.
+
+El uso del software Wordpress para la realización de esta página de presentación se justifica por su rapidez de implantación, su flexibilidad y por la familiaridad con el entorno por parte de los investigadores involucrados en el proyecto. 
+
+Además, debido a ser un aspecto tangencial del proyecto, no resultaba fructífero invertir esfuerzos en realizar una implementación propia en este aspecto, además de que se hacía necesario disponer de esta información en la Web cuanto antes.
+
+Más adelante, para el desarrollo del panel de control, si se realizaría una implementación propia que permitiese realizar ajustes correspondientes.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=20pc]{img/web/web-wp.png}
+\caption{Web principal: Vista de escritorio}
+\end{SCfigure}
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=18pc]{img/web/web-wp-tablet.png}\includegraphics[width=12pc]{img/web/web-wp-movil.png}
+\caption{Web principal: Vista tablet y móvil}
+\end{SCfigure}
+
+\clearpage
+
+\subsection{Visor de eventos online}
+
+Ya hemos hablado de la necesidad de depuración especiales que impone un sistema como el presentado en esta memoria en el Capítulo \ref{chap:depuracion} donde se presentaba el sistema de depuración del sistema.
+
+Sin embargo, dicho sistema se basa en la salida en ficheros formateados con la información de depuración lo cual resulta poco atractivo y funcional.
+
+Para mejorar la depuración y control de errores del proyecto, se desarrolla un portal web que permita la visualización en tiempo real de la información de depuración del sistema.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=26pc]{img/web/web-logs.png}
+\caption{Visor de eventos}
+\end{SCfigure}
+
+Este sistema está basado en el software de visualización de logs del Sistema Apache aplicado a nuestro sistema SiMa.
+
+Dispone de un sistema de ``notificaciones'' usando la api \texttt{web.notifications} que permite enviar notificaciones al sistema operativo mediante una página en el navegador web que cumpla el estándar.
+
+Su desarrollo y uso ha resultado de vital importancia en la tarea de desarrollo y depuración de errores de todo el sistema.
+
+\subsection{Panel de control}
+
+De forma adicional a la página web (cuya finalidad es más de publicidad) y al visor de eventos (que obedece más a la necesidad de control del sistema) se presenta el panel de control desarrollado para la visualización de los datos públicos del sistema. Es por tanto, el sistema que emplearían los usuarios que quisieran obtener información sobre el sistema.
+
+Al igual que las anteriores plataformas se haya implementado realizando un diseño Resonsive Desing, para lo cual se ha empleado la conocida y popular librería \emph{Boostrap}.
+
+Si bien el portal actual es sólo una maqueta de diseño, consta de funcionalidad completa en todos sus apartados y menús, debido principalmente al trabajo desarrollado en la implementación de los Servicios Web.
+
+Debido a la normativa de la Ley de Cookies regulada por la Ley de Servicios de la Información, se ha implementado un servicio de doble almacenamiento de información, implementando un sistema basado tanto en \texttt{LocalStorage} como en \texttt{Coockies}. Esto nos permite emebeber nuestra portal Web como aplicación móvil, como veremos más adelante en la Sección \ref{sec:aplicacionmovil}.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=26pc]{img/web/portal-web.png}
+\includegraphics[width=18pc]{img/web/portal-tablet.png}\includegraphics[width=10pc]{img/web/portal-movil.png}
+\caption[Panel de control]{Panel de control: Visualización diversos dispositivos: Escritorio, Tablet y Móvil}
+\end{SCfigure}
+
+\begin{figure}[tb]
+\centering
+\includegraphics[width=14pc]{img/web/portal-c1.png}\includegraphics[width=14pc]{img/web/portal-c2.png}
+\includegraphics[width=14pc]{img/web/portal-c3.png}\includegraphics[width=14pc]{img/web/portal-c4.png}
+\includegraphics[width=14pc]{img/web/portal-c5.png}\includegraphics[width=14pc]{img/web/portal-c6.png}
+\includegraphics[width=14pc]{img/web/portal-c7.png}\includegraphics[width=14pc]{img/web/portal-c8.png}
+\includegraphics[width=14pc]{img/web/portal-c9.png}
+\caption[Panel de control: Distintos temas]{Distintos temas disponibles para el panel de control}
+\end{figure}
+
+\subsubsection{Visita Guiada}
+
+Una funcionalidad a destacar es la funcionalidad que permite realizar una visita guiada sobre el portal web, que sirve tanto de tutorial como de presentación al entorno. Dicho tutorial se basa en la realización guiada de una serie de acciones y pasos sobre el portal, que permiten al usuario familiarizarse con el entorno.
+
+\clearpage
+
+\subsection{Panel de Administración de Google Fusion Tables}
+
+Aunque no es fruto del desarrollo del Sistema, consideramos necesario hablar aunque sea brevemente del panel de control de Google Fusion Tables. Este entorno nos ofrece una interfaz web que nos permite trabajar con nuestros datos, así como representarlos en gráficos y mapas, mediante una interfaz interactiva.
+
+Si bien no es posible realizar todas las funcionalidades avanzadas que permite la implementación con el uso de la API REST, es un buen entorno de visualización de los datos, pues permite de forma muy simple realizar operaciones de búsqueda y filtrado.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=12pc]{img/web/ft-1.png}\includegraphics[width=12pc]{img/web/ft-2.png}
+\includegraphics[width=12pc]{img/web/ft-3.png}\includegraphics[width=12pc]{img/web/ft-4.png}
+\caption[Panel de Administración Google Fusion Tables]{Panel de Administración de Google Fusion Tables: Vista de tablas, resumen de datos, Mapas de calor, Creación Interactiva de Gráficas}
+\end{SCfigure}
+
+\clearpage
+
+\section{Aplicación Móvil}
+\label{sec:aplicacionmovil}
+
+Aunque no estaba en la planificación inicial del proyecto, debido al auge de las tecnologías móviles y a la facilidad relativa para empaquetar todo nuestro entorno web en un app,  se decidió crear una aplicación móvil para ofrecer información del servidor a los usuarios.
+
+Para ello se realizó una aplicación basada en la tecnología de \emph{Apache Cordova} y \emph{Adobe Phonegap}, que componen un entorno libre y opensource para crear aplicaciones móviles basadas en estándares web.
+
+A pesar de que este entorno permite el desarrollo para multitud de dispositivos móviles (iOS, Android, Windows Phone, Blackberry, FirefoxOS, webOS, Bada,...) usando el mismo componente web, a término de la redacción de este documento ha sido realizado la aplicación en Android.
+
+La elección de este sistema operativo frente a otros, es su popularidad y facilidades que ofrece para el desarrollo de apps.
+
+\subsection{Optimizaciones}
+
+Sin embargo las aplicaciones basadas en estándares web difícilmente pueden igualar en rendimiento a las aplicaciones desarrolladas de forma nativa para una plataforma en concreto. Es por ello que las primeras versiones desarrolladas de nuestra app no hacía gala de un rendimiento cercano al fluido.
+
+Se realizaron optimizaciones relativas tanto al entorno web como al entorno de la app. Por recoger en este documento sólo algunas de ellas:
+
+\begin{itemize}
+	\item Habilitado del renderizado mediante hardware gráfico de la \texttt{WebView}.
+	\item Inclusión de los recursos empleados por la app dentro de los \texttt{resources} en lugar de su descarga en cada ejecución.
+	\item Optimizado del código Javascript encargado de la lógica de la app y unificado de los ficheros para reducir tiempos de carga.
+\end{itemize}
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=12pc]{img/movil/inicio.png}\includegraphics[width=12pc]{img/movil/vista-principal.png}
+\includegraphics[width=12pc]{img/movil/tabla.png}\includegraphics[width=12pc]{img/movil/mapa.png}
+\includegraphics[width=24pc]{img/movil/logs.png}
+\caption[Aplicación móvil]{Capturas de pantalla de la aplicación móvil Android basada en tecnología Web}
+\end{SCfigure}
+
+\vfill
+\cleardoublepage

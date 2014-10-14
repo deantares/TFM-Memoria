@@ -1,0 +1,73 @@
+\myChapter{Antecedentes}\label{chap:antecedentes}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+La mayoría de los sistemas empleados para monitorizar el flujo de tráfico en las carreteras resultan excesivamente caros  para una implantación en masa, y además solo recogen información sobre la cantidad de vehículos que han circulado. Además, esas tecnologías son incapaces de identificar el mismo vehículo en diferentes sitios sitios u ocurrencias sobre el mismo dispositivo capturador, limitándose tan solo a contar y obtener algún tipo de información vaga sobre el tipo de vehículo \cite{monitoring,Martin2003}.
+
+Contar con un sistema de información sobre el estado del trafico y la predicción del uso de la red viaria por parte de los vehículos se antoja clave en el contexto actual. Con una población cada vez más informada y con dispositivos de comunicación ubicuos que poseen y usan habitualmente prácticamente el 90\% de la población, obtener información sobre cómo se encuentra el tráfico en cualquier momento en cualquiera de los casi 20.000 kilómetros con los que cuenta la red viaria nacional, significaría poder gestionar de manera óptima una red de comunicaciones vital para un porcentaje elevado de usuarios. 
+
+Tal sistema ayudaría a las políticas urbanísticas y de ordenación territorial coordinadas con las de movilidad al reducir la necesidad de desplazamiento al poder planificar los ciudadanos sus desplazamientos (incluso en transporte público).
+
+La aplicación de esta propuesta en el transporte supondría disponer de un sistema de información sobre el estado del trafico y de predicción del uso de la red viaria por parte de los vehículos. También ayudaría a gestionar de manera óptima una red de comunicaciones vital para un procentaje elevado de usuarios. 
+ 
+La primera consecuencia directa sería un aprovechamiento más eficiente del uso de los vehículos en los desplazamientos, por lo que se podría esperar  un menor número de trayectos en vehículo privado, o al menos más optimizados.
+
+Estos objetivos son los que nos hemos planteado en el presente desarrollo, y pasan por contar con un sistema de información y de predicción de tráfico para que puedan ser utilizados con el fin de reducir los desplazamientos individuales, así como incrementar los desplazamientos en transporte público.
+
+Nuestro objetivo final es disponer de información acerca de los flujos de tráfico que se producen entre ciudades, lo que permitirá poder gestionar de manera óptima las decisiones de desplazamiento por parte de los ciudadanos. 
+
+La idea es obtener un sistema de ayuda a la toma de decisiones, capaz de aplicar conocimiento en aplicaciones comerciales relacionadas con la movilidad. 
+
+Para ello, el procesamiento de los datos adquiridos con estos sistemas requiere de algoritmos complejos de minería de datos, computación evolutiva y redes neuronales, aprendizaje automático y de métodos estadísticos, que se irán desarrollando e integrando como servicios web en el sistema.
+
+Por tanto, encontramos que se tienen varias necesidades desde el punto de vista de la gestión del transporte:
+\begin{itemize}
+	\item Se necesitará un dispositivo autónomo y versátil de recogida de datos y monitorización. 
+	\item Además es necesario recopilar los datos del tráfico en tiempo real. 
+	\item Una vez se tienen los datos, hay que procesarlos de manera correcta para poder ofrecer la información específica necesaria.
+	\item También se necesita un sistema que teniendo en cuenta la evolución de los actuales sistemas de información, permita poder compartir esos datos con aquellos que toman decisiones sobre movilidad, no sólo desde el punto de vista institucional sino también desde el punto de vista personal.
+	\item Por último, y máxime en el contexto actual, se necesita un sistema de información que sea de bajo coste, que permita su amortización de la manera más rápida posible y que posibilite que sea capitalizado por parte de todo tipo de agentes en la ciudad.
+\end{itemize}
+
+\section{Tecnologías Actuales}
+
+Los sistemas de información aplicados a la recopilación de datos y generación de información sobre el estado de las carreteras se clasifican por la inmediatez en la obtención de los datos (la toma de datos se define como directa cuando la fuente obtenga el dato estudiado sin utilizar algoritmos adicionales), por la exhaustividad en la recopilación (la toma de datos será casi exhaustiva, cuando su representatividad sea casi total, es decir cuando el número de medidas tomadas coincida con el número de usuarios de ese tramo de la red) y por la intrusividad que tengan estos. La Figura 1 muestra una clasificación de los sistemas de información en función de la intrusividad de la tecnología.
+
+Principalmente, los sistemas utilizados en la actualidad son:
+
+\begin{itemize}
+	\item tubos neumáticos o aforadores (sensores de ejes que detectan el paso del vehículo), 
+	\item detectores de lazo o espiras (detectan el paso del vehículo por variación de la masa magnética sobre el lazo),
+	\item vehículos flotantes (dotados de sensores que recoge información mientras circula por una ruta predefinida), y
+	\item sistemas de identificación automática de vehículos (en los telepeajes). 
+\end{itemize}
+
+La principal desventaja de estos sistemas es que no tienen capacidad para identificar e individualizar los vehículos que detectan, por lo que no es posible la elaboración de matrices origen/destino dinámicas con infraestructuras basadas en ellos. 
+
+Sólo es posible saber que han pasado un número de vehículos y la tipología de los mismos, pero no permite conocer los flujos de movimiento tal y como se producen. 
+
+Además, su coste elevado hace muy poco rentable cubrir la red de carreteras secundarias con ellos, por lo que se suelen ubicar en vías principales y en salidas de grandes núcleos de población.
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=26pc]{img/antecedentes/tecnologias.png}
+\caption{Clasificación de los sistemas de información para transporte en función de la intrusividad de la tecnología}
+\label{fig:tecnologiasinformacion}
+\end{SCfigure}
+
+\section{Colaboración con la empresa Ciudad 2020}
+
+Ciudad 2020 es una empresa TIC de Córdoba cuya misión es conectar la realidad del entorno, para poder medirla, analizar y tomar decisiones en función de la información extraída. Su principal objetivo es organizar la información del entorno físico para ayudar en la toma de decisiones a todo tipo de organizaciones en función del análisis del flujo y comportamiento de las personas. Trabaja principalmente en la Internet de las cosas, sociometría y reality mining.
+
+La tecnología desarrollada por Ciudad 2020 y los servicios que ofrece se basan en la implantación de una red de dispositivos Intelify repartidos por la ciudad para obtener los datos de movilidad.
+
+Mediante un despliegue de dispositivos autónomos por la ciudad, ofrecen información de importancia entre otros para los sectores turístico y comercial, así como para la movilidad en la ciudad. Concretamente, en se ofrece un servicio de monitorización del paso de personas por las calles céntricas de la ciudad de Córdoba.
+
+
+\vfill
+\cleardoublepage

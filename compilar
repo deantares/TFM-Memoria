@@ -1,0 +1,21 @@
+#!/bin/sh
+
+rm *.mtc
+rm *.aux
+rm *.bbl
+rm *.blg
+rm *.log
+rm *~
+rm *.dvi
+
+./clean
+pdflatex -shell-escape TFM.tex 
+pdflatex -shell-escape TFM.tex 
+bibtex TFM 
+pdflatex -shell-escape TFM.tex
+pdflatex -shell-escape TFM.tex
+pdflatex -shell-escape TFM.tex
+echo "-----------------------------"
+echo "ESTO ACABAO"
+./clean
+evince TFM.pdf &

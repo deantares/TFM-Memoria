@@ -1,0 +1,185 @@
+\myChapter{Servidor Local}\label{chap:servidor}
+%\begin{flushright}{\slshape
+%   Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+En este capítulo se describe la configuración y prestaciones del servidor de cómputo local relacionado con el proyecto SIPEsCA. Debido a la naturaleza en Tiempo Real del procesado de datos del proyecto y el volumen de datos esperable, consideramos necesario hacer especial mención al servidor de cómputo, ya que tanto el diseño de su configuración como las optimizaciones llevadas a cabo en él han supuesto mejoras significativas en el procesado de los datos.
+
+Además, debido a la naturaleza del proyecto, el procesado de los datos ha de hacerse en Tiempo Real, esto es, es necesario un servidor robusto y tolerable a fallos para adquirir los datos de forma constante.
+
+Esta característica, limita también la experimentación de las configuraciones ya que una vez se ha instalado y configurado el servidor, realizar cualquier cambio u optimización sobre él se vuelve muy costosa. Además,de que en muchas ocasiones imposibilita la correcta métrica experimental de las mejoras conseguidas.
+
+\section{Hardware}
+
+Las características principales del Hardware del servidor de cómputo son:
+\begin{table}[H]
+\begin{description}
+	\item {Procesador} Intel(R) Core(TM) i5-4430 CPU @ 3.00GHz
+	\item {Memoria} 16 GiB DDR3 1333MHz
+	\item {Tarjeta Gr\'afica} NVIDIA GT 630
+	\item {Disco duro 1} Westerm Digital 500GB 7200RPM
+	\item {Disco duro 2} Westerm Digital 500GB 7200RPM
+\end{description}
+\caption{Características Hardware del Servidor de Cómputo}
+\end{table}
+
+Destacar la adquisición de 16GiB de memoria RAM, inversión que permitió mantener en memoria la mayoría de los datos, con la correspondiente mejora en los tiempos de acceso a los mismos. Además, se posibilita la adquisición de otros 16GiB de memoria al quedar dos sockets libres en la placa base.
+
+Se eligió también una tarjeta gráfica marca NVIDIA, por su posibilidad de utilización de la tecnología CUDA como futura línea de investigación.
+
+\subsection{RAID}
+\label{sec:raid}
+
+En el servidor de computo debíamos de garantizar la seguridad e integridad de los datos, además de intentar mejorar en lo máximo posible las operaciones de E/S, que dada la naturaleza del cómputo que se iba a realizar en él iban a ser las más frecuentes. Es por ello que se decide la adquisición de dos disco duros para establecer un RAID1\cite{raid} entre ellos. 
+
+El RAID 1 crea una copia exacta (o espejo) de los datos en dos o  más disco. Esta configuración premia en rendimiento a la lectura de los datos, incrementando el rendimiento como múltiplo lineal del número de copias. Esto implica que un sistema con un RAID1 constituido con 2 discos duros puede estar leyendo simultáneamente dos datos diferentes en dos discos diferentes, consiguiendo duplicar su rendimiento. Por tanto, el tiempo medio de lectura se reduce, ya que los sectores a buscar pueden dividirse entre los discos, bajando el tiempo de búsqueda y subiendo la tasa de trasferencia, con el único límite de velocidad soportada por la controladora.
+
+En el servidor, se adquirió una placa base con soporte para RAID1 de forma física (no simulada por software) mediante dos controladoras de disco independiente, una para cada disco (spliting o duplexing).
+
+En las operaciones de escritura, el conjunto RAID1 se comporta como un único disco duro, dato que los datos debes ser escritor en todos los disco que conforman el RAID. Por tanto el rendimiento no mejora. Se consideró esta configuración debido a que se estimó que cada dato era solo escrito una vez (cuando se producía) pero en cambio era requerido de ser leído múltiples veces (en función de los algoritmos de procesamiento que se realizasen). Por tanto, esta configuración que premia la lectura de los datos (frente a la escritura) resultaba la más conveniente.
+
+Además, un sistema RAID1 tiene muchas ventajas a la hora de la adminsitración del sistema. Por ejemplo, en entornos 24/7 como en el que nos encontramos, es posible marcar un disco como ``inactivo'' para la realización de una copia de seguridad de dicho disco, reconstruyéndose el RAID de forma automática al volver a marcar el disco como activo. Esto supone una gran baza a la hora de obtener instantáneas de los datos. Este mismo sistema de ``reconstrucción'' funciona igualmente en caso de fallo físico de uno de los discos, con lo cual se mantiene siempre un respaldo del disco duro, lo cual supone un mecanismo de seguridad adicional.
+
+Por último, se descartó añadir al servidor un disco duro sólido (SSD) que pese a ser la alternativa en el mercado más rápida en los tiempos de acceso para lectura, su degradación con el uso suponía un riesgo que difícilmente se podía abordar, además de un coste por GiB de almacenamiento mucho mayor.
+
+\section{Sistema operativo}
+
+Como sistema operativo se instala Ubuntu Server 12.04.03 LTS con el kernel GNU/Linux 3.5.0-40-generic x86\_64.
+
+Se opta por este sistema operativo frente a las alternativas planteadas (Debian, CentOS, Ubuntu 13.10) debido a predilecciones personales y familiaridad con el entorno, además de suponer un entorno Libre y disponible para todos los investigadores del proyecto.
+
+Se configura un entorno LAMP\cite{lamp} para el servidor, que además del procesado de datos servirá algunos servicios y plataformas WEB.
+
+\subsection{Configuración adicional del Sistema Operativo: Sistema no-atime}
+
+Para intentar optimizar aún más el acceso a la lectura de los discos duros, se configuran las particiones de los discos duros de forma `noatime' \cite{noatime}. 
+
+Por defecto, el sistema de archivos mantiene una variable denominada atime o Access Time para cada fichero, indicando la fecha del último acceso a dicho fichero. Esto supone que para cada lectura del disco, es necesario realizar una escritura (para actualizar dicha fecha). En nuestro sistema esta configuración por defecto nos supone una lacra, pues estamos desaprovechando las ventajas del RAID1, además de estar imponiendo una limitación a la velocidad de lectura.
+
+Para eliminar esta configuración, es necesaria editar la tabla de particiones del servidor, alojada en \texttt{/etc/fstab} y añadir la directiva \texttt{noatime} a las particiones implicadas. 
+
+Como experimento de esta configuración, realizamos la siguiente prueba.
+
+Se ejecutará a los 10 minutos del inicio del sistema operativo el siguiente comando:
+
+\texttt{ time find /etc -name ".*" -exec cat '{}' ";" > /dev/null 2>/dev/null}
+
+Dicho comando mide el tiempo del sistema necesario para acceder a todos los ficheros alojado en \texttt{/etc} ``imprimirlos por pantalla'' (aunque se vuelva a salida nula).
+
+Ejecutamos el comando tanto en nuestro sistema por defecto, como en nuestra configuración no-atime:
+
+\begin{table}[H]
+\begin{tabular}{|c|c|c|}
+\hline 
+ & Sistema por defecto & Sistema no-atime\tabularnewline
+\hline 
+\hline 
+Tiempo & 0m.2.632s & 0m.037s\tabularnewline
+\hline 
+Ganacia & 1 & 2 049 729\tabularnewline
+\hline 
+\end{tabular}
+
+\caption{Tiempos de lectura en disco en un sistema por defecto y en un sistema
+no-atime}
+
+
+\end{table}
+
+Como se puede observar, la mejora es increíblemente significativa. Es por ello que en nuestro entorno preferimos sacrificar la existencia del campo atime, frente a unos accesos a disco muchos más rápidos, que es el fin máximo de este capítulo.
+
+\subsection{Configuración adicional del sistema operativo: Fichero temporales y logs en memoria RAM (Descartado)}
+
+Una configuración cuyo fin era también la mejora de las operaciones de entrada y salida a disco y que fue planteada (pero desestimada) fue la utilización de particiones de archivos montados en memoria RAM para alojar los ficheros temporales y variables de depuración (o logs del sistema) \cite{snyder1990tmpfs}.
+
+Por la naturaleza de estos ficheros, suelen suponer escrituras constante en disco. Se estudió la posibilidad de establecer particiones ``simuladas'' en la memoria RAM para almacenar esta información. Para configurarlo, hay que editar nuevamente el fichero  \texttt{/etc/fstab} y añadir las siguientes particiones:
+
+\framebox{\begin{minipage}[t]{1\columnwidth}%
+\texttt{\#Archivos temporales y logs alojados en RAM}
+
+\texttt{none /tmp tmpfs size=4\%, defaults 0 0}
+
+\texttt{none /var/tmp tmpfs size=3\%, defaults 0 0}
+
+\texttt{none /var/log tmpfs size=3\%, defaults 0 0}%
+\end{minipage}}
+
+Sin embargo, esta configuración supone varios problemas:
+\begin{itemize}
+	\item Limita el tamaño de los ficheros temporales y de log al tamaño asignado (el porcentaje de RAM asignada a la partición).
+	\item Reduce la memoria RAM disponible de forma absoluta, pues se reduce la RAM en el total del tamaño de las particiones.
+	\item La información de LOG es perdida en caso de errores que supongan el reinicio o apagado del servidor. 
+\end{itemize}
+
+Debido a estas complicaciones, se desestima realizar esta configuración, al menos durante el tiempo en el que el servidor se halle en un entorno aún en desarrollo.
+
+\section{Base de datos local: MySQL}
+
+Aunque más adelante se dedicará un capítulo entero a las bases de datos, este apartado se centrará en las configuraciones realizadas a MySQL\cite{mysql} como motor de base de datos a nivel de configuración de servicio. La elección de MySQL como gestor de base de datos para el almacenaje de los datos será también discutida en adelante.
+
+\subsection{Deshabilitado de la Query-Caché o caché de consultas}
+
+La caché de consultas o query-caché es un mecanismo proveído por MySQL que se encarga de almacenar el texto de una consulta SELECT junto con el resultado que se envió al cliente. El funcionamiento de este mecanismo es tal que si el motor de base de datos recibe una consulta idéntica posteriormente (en función del tiempo de expiración de la caché) el gestor de base de datos devuelve el resultado en la caché de consultas en lugar de interpretar y ejecutar nuevamente la consulta.
+
+Este tipo de mecanismos de caché son muy empleados (y útiles) en servidores WEB y demás entornos en los que la probabilidad de volver a solicitar unos datos anteriormente pedidos es muy alta. Resultan también muy útiles en entornos donde las tablas no sufren muchos cambios a lo largo del tiempo.
+
+Sin embargo, nuestro sistema es totalmente opuesto a este tipo de naturaleza, pues ofrecemos datos rápidamente cambiados (en tiempo Real) y difícilmente se van a procesar nuevamente las mismas consultas al tratarse de un servidor de cómputo.
+
+Además, este mecanismo supone un cuello de botella a la paralelización de la base de datos, al tener que consultarse ``la caché'' antes de procesar cualquier consulta. En entornos multihebra (como el que se propone) esto impone que todas las hebras tiene que acceder al mismo recurso antes de poder procesarse: la caché de consultas.
+
+Es por ello, que se decide dehabilitar la caché de consultas. Para ello es necesario cambiar la variable Global \texttt{query\_cache\_type} al valor \texttt{OFF}.
+
+\section{Configuración de APACHE}
+
+Aunque la tarea principal de nuestro servidor es de cómputo, se va a emplear también para albergar un portal web que publicite el proyecto así como un par de servicios web para suministrar acceso a los datos. Es por ello que configuramos nuestro servidor con una instalación de APACHE 2.4.6 \cite{apache2011apache}.
+
+Dado que no es un compone vital para el cometido principal del servidor, no se realiza ninguna configuración adicional más que la configuración de dos espacios. Uno el que se encuentra por defecto en el puerto 80 que alojará los portales WEBs, y el otro alojado en el puerto 8080 que se encargará de ofrecer los servicios web.
+
+Para ello, es necesario modificar el fichero que indica los puertos de escucha de APACHE \texttt{/etc/apache2/ports.conf} añadiendo al directivas:
+
+
+\framebox{\begin{minipage}[t]{1\columnwidth}%
+\texttt{listen 80}
+
+\texttt{listen 8080}
+
+\end{minipage}}
+
+Además, es necesario añadir los ficheros de configuración de los espacios al directorio \texttt{/etc/apache2/sites-enabled/}. En nuestro caso, añadimos el espacio para el portal web en el fichero \\ \texttt{/etc/apache2/sites-enabled/web-site.conf}.
+
+\framebox{\begin{minipage}[t]{1\columnwidth}%
+\texttt{\#Archivos temporales y logs alojados en RAM}
+
+\texttt{none /tmp tmpfs size=4\%, defaults 0 0}
+
+\texttt{none /var/tmp tmpfs size=3\%, defaults 0 0}
+
+\texttt{none /var/log tmpfs size=3\%, defaults 0 0}%
+\end{minipage}}
+
+Y el fichero \texttt{/etc/apache2/sites-enabled/webservices.conf} para el espacio para los servicios web:
+
+\framebox{\begin{minipage}[t]{1\columnwidth}%
+\texttt{<VirtualHost {*}:8080>}
+
+\texttt{ServerAdmin proyectosipesca@gmail.com}
+
+\texttt{Header always append Access-Control-Allow-Origin: \textquotedbl{}http://sipesca.ugr.es\textquotedbl{}}
+
+\texttt{DocumentRoot /var/www/ws}
+
+\texttt{ErrorLog \$\{APACHE\_LOG\_DIR\}/error.log}
+
+\texttt{CustomLog \$\{APACHE\_LOG\_DIR\}/access\_ws.log combined}
+
+\texttt{</VirtualHost>}%
+\end{minipage}}
+
+Como en cualquier cambio realizado en el servidor APACHE, es necesario reiniciar el servicio para que se establezcan estos cambios.
+
+\vfill
+\cleardoublepage

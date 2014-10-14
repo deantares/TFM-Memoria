@@ -1,0 +1,16 @@
+# Fdb version 3
+["pdflatex"] 1409489887 "offline.tex" "offline.pdf" "offline" 1409489887
+  "/etc/texmf/web2c/texmf.cnf" 1403132755 475 c0e671620eb5563b2130f56340a5fde8 ""
+  "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1272929888 3287 e6b82fe08f5336d4d5ebc73fb1152e87 ""
+  "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm" 1136768653 1328 c834bbb027764024c09d3d2bf908b5f0 ""
+  "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsl10.tfm" 1136768653 1508 efecb4a315fe0975509670a272d75ef5 ""
+  "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmti10.tfm" 1136768653 1480 aa8e34af0eb6a2941b776984cf1dfdc4 ""
+  "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1392645748 31083 1dfd8bf685ce0009c40532fedf8a7c53 ""
+  "/usr/share/texmf/web2c/texmf.cnf" 1392645748 31083 1dfd8bf685ce0009c40532fedf8a7c53 ""
+  "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1408331739 1042924 522cc3059088555b5e489635d162203b ""
+  "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1408331742 863273 fafd9084317c221928438fcff8f2d0a0 ""
+  "offline.aux" 1409489837 3766 d48e6b28696dba4ad5fed621b7133548 ""
+  "offline.tex" 1409489886 8111 323c31ac8892968c8b32784ed48d411a ""
+  (generated)
+  "offline.log"
+  "offline.pdf"

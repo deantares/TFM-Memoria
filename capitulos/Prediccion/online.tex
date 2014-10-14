@@ -1,0 +1,313 @@
+\myChapter{Predicción Online}\label{chap:predicciononline}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\vfill
+\minitoc\mtcskip
+\clearpage
+
+En el anterior capítulo hemos presentado distintas técnicas para la predicción de series temporales, pero dichas técnicas han sido realizadas ``offline'', es decir, con series temporales extraídas del sistema, y sin introducir sus valores predichos al sistema.
+
+En este capítulo presentamos el módulo de predicción implementado para el sistema SiMa, que permite realizar predicciones ``online'', lo que implica que las predicciones se realizan a medida que se recogen los datos en el sistema. Además, se adelantará el sistema de subida en la nube mediante fusion tables para su publicación. El módulo de subida de datos a la nube será presentado en el Capítulo \ref{chap:actualizadorFusionTables}. Para la comprensión de este capítulo sólo es necesario adelantar que dicho módulo dispone de métodos que permiten trabajar de forma nativa con las tablas alojadas en Google Fusion Tables, permitiendo la realización de funciones típicas de SQL.
+
+\section{Software empleado}
+
+A la hora de hacer uso de cualquier técnica de predicción existente en la bibliografía, existen dos alternativas. La primera para por la implementación del método, el cual tiene que estar lo suficientemente documentado para poder permitir una reproducción de la implemenación, lo cual no suele ser lo común, presentándose los métodos únicamente desde el punto de vista del modelo matemático.
+
+La otra alternativa para por emplear algún paquete de software con implementaciones muy eficientes y probadas de métodos clásicos de predicción. En nuestro caso, se optó por probar dos paquetes de software para predicción.
+
+\subsection{R}
+
+R es un lenguaje de programación más que un entorno de software, dispone de innumerables librerías OpenSource para el procesamiento de información. En nuestro caso, nos interesamos por la librerías de predicción de series temporales basadas en métodos estadísticos (no en modelos entrenados) denominada \texttt{forecasting}.
+
+Debido a ser un lenguaje externo, ofrecía escasa integración de forma nativa con nuestro sistema (desarrollado en JAVA).
+
+Aún así, se realizó una versión preliminar del código que permite la ejecución de este entorno de predicción. En el siguiente código se muestra un ejemplo de uso de los métodos de predicción \texttt{ets} y \texttt{Holt Winters}.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=R,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+#Lectura de los datos
+library(forecast)
+data <- scan("/tmp/datosR.csv")
+dataseries <- ts(data,start=c(1913))
+png('/var/www/Rjava/t.png')
+
+#Método de predicción ETS
+forecast(ets(dataseries), 5)
+plot( forecast(ets(dataseries), 5) )
+png('/var/www/Rjava/t2.png')
+
+#Método de predicción Holt Winters
+rainseriesHW <- HoltWinters(rainseries, gamma=FALSE)
+forecast.HoltWinters(rainseriesHW, h=5)
+plot( forecast.HoltWinters(rainseriesHW, h=5) )
+\end{lstlisting}
+\caption[Código: Código para la predicción en R: Script]{Código: Código para la predicción en R : Script en R}
+\end{figure}
+
+Este código toma los valores de la serie temporal desde un fichero de CSV almacenado en el fichero temporal. Veremos que esta manera de proceder fue salvada por una alternativa mucho más eficiente.
+
+Para lanzar nuestro método de predicción basado en R desde nuestro sistema desarrollado en Java, se puede hacer uso del siguiente código:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+try {
+	//Ejecución del script
+	String rScriptFileName = localPath+"miscript.R";
+    Runtime.getRuntime().exec("/usr/bin/Rscript " + rScriptFileName);
+    //Espera a término de ejecución del script
+    try {Thread.sleep(10000);}
+    catch (InterruptedException e) {e.printStackTrace();}      
+    //Lectura de la salida
+    String matchFileName = localPath+"resultado.csv";
+    BufferedReader br3 = new BufferedReader(new FileReader(matchFileName));
+    String thisRow;
+    int rowIndex = 0;
+    while ((thisRow = br3.readLine()) != null) {
+    	System.out.println( "Lin." + rowIndex + " -> " + "[" + thisRow + "]" );
+        rowIndex += 1;
+    }
+    br3.close();
+}
+catch (FileNotFoundException e) {e.printStackTrace();}
+catch (IOException ie){ie.printStackTrace();}
+\end{lstlisting}
+\caption[Código: Código para la predicción en R: Java]{Código: Código para la predicción en R : Código fuente del módulo en Java.}
+\end{figure}
+
+Este método tiene varias desventajas. La más evidente es que requiere de una llamada a software externo (el script en R) que no puede ser controlada con los mecanismos provistos en el sistema (como la depuración o la configuración).
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=15pc]{img/prediccion/t.png}\includegraphics[width=15pc]{img/prediccion/t2.png}
+\caption[Gráfica de salida de predición en R]{Gráfica con serie temporal de pruebas, con la predicción realizada por los dos métodos en R}
+\label{fig:prediccionR}
+\end{SCfigure}
+
+Además, estos métodos estadísticos predicen la tendencia futura tal y como se muestra en la Figura \ref{fig:prediccionR}, no los ``valores'' en el futuro.
+
+Si bien este tipo de técnicas puede resultar útil para un análisis offline de los datos, su uso no parece el adecuado para un entorno Online.
+
+\subsection{Weka}
+
+Weka se describe como ``un entorno para análisis del conocimiento'', ofreciendo para ello múltiples herramientas para el aprendizaje automático y la minería de datos. Aunque su forma más común es mediante un GUI, al ser OpenSource, ofrece también sus librerías como entorno para la utilización por programadores terceros.
+
+Al estar programado en Java resulta un entorno excelente para integrarlo en nuestro sistema SiMa. Si bien las predicciones de series temporales no han sido soportadas (a modo de plugin externo) hasta la versión 3.7 de Weka (a la escritura de este documento aún en estado de ``desarrollo''), sus librerías resultan muy útiles para la utilización de métodos de predicción dentro de nuestro sistema.
+
+A continuación un ejemplo de uso de predicción haciendo uso de las librerías de Weka:
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+import java.io.*;
+import java.util.List;
+import weka.core.Instances;
+import weka.classifiers.functions.GaussianProcesses;
+import weka.classifiers.evaluation.NumericPrediction;
+import weka.classifiers.timeseries.WekaForecaster;
+import weka.classifiers.timeseries.core.TSLagMaker;
+
+public class TimeSeriesExample {
+
+  public static void main(String[] args) {
+    try {
+      String pathToWineData = weka.core.WekaPackageManager.PACKAGES_DIR.toString()
+        + File.separator + "timeseriesForecasting" + File.separator + "sample-data"
+        + File.separator + "wine.arff";
+
+      Instances wine = new Instances(new BufferedReader(new FileReader(pathToWineData)));
+
+      WekaForecaster forecaster = new WekaForecaster();
+
+      forecaster.setFieldsToForecast("Fortified,Dry-white");
+
+      forecaster.setBaseForecaster(new GaussianProcesses());
+
+      forecaster.getTSLagMaker().setTimeStampField("Date");
+      forecaster.getTSLagMaker().setMinLag(1);
+      forecaster.getTSLagMaker().setMaxLag(12);
+
+      forecaster.getTSLagMaker().setAddMonthOfYear(true);
+
+      forecaster.getTSLagMaker().setAddQuarterOfYear(true);
+
+      forecaster.buildForecaster(wine, System.out);
+
+      forecaster.primeForecaster(wine);
+
+      List<List<NumericPrediction>> forecast = forecaster.forecast(12, System.out);
+
+      for (int i = 0; i < 12; i++) {
+        List<NumericPrediction> predsAtStep = forecast.get(i);
+        for (int j = 0; j < 2; j++) {
+          NumericPrediction predForTarget = predsAtStep.get(j);
+          System.out.print("" + predForTarget.predicted() + " ");
+        }
+        System.out.println();
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+}
+\end{lstlisting}
+\caption[Código: Código para la predicción en Weka]{Código: Código para la predicción en Weka: Ejemplo.}
+\end{figure}
+
+\section{SiMa: Módulo de Predicción}
+
+De igual manera que con módulos anteriores, en esta sección se presentan los componentes encargados de la predicción para posteriormente presentar el módulo encargado del correcto funcionamiento y sincronización de todos los componentes.
+
+\subsection{Carga de datos}
+
+En los anteriores ejemplos presentados se hacía uso de ficheros temporales para la carga de los datos al modelo de predicción a entrenar. Esto es debido a que las librerías de \texttt{WEKA} sólo ofrecen mecanismos para cargar de forma nativa \texttt{Instancias} desde ficheros \texttt{ARFF}.
+
+Sin embargo, el tener que realizar este volcado a disco constantemente para realizar la predicción no resulta una situación favorable, debido a que el fichero en disco puede ser modificado sin que el módulo tenga constancia de ello. Es por ello que se implementa un método \texttt{cargarDatos} que sirve para crear un conjunto de \texttt{Instancias} con la que las librerías de \texttt{Weka} pueden trabajar de forma nativa mediante una petición a nuestra base de datos en la nube (Google Fusion Tables). El hecho de emplear nuestra base de datos en la nube frente a la base de datos local, es para interferir lo menos posible en los métodos de procesamiento de datos de nuestra base de datos.
+
+A continuación se presenta el código encargado de realizar la carga desde una petición a nuestra base de datos en la Nube (Google Fusion Tables). En dicho código se adelanta el módulo de actualizador en la nube que será presentado en el Capítulo \ref{chap:actualizadorFusionTables} tal y como se ha indicado al principio de este capítulo. Lo único que es necesario saber sobre el método \texttt{cFT.select} es que nos permite trabajar con nuestra base de datos en la nube como con cualquier otra base de datos \footnote{Dicho método forma parte de la implementación de nuestro sistema de sincronización en la nube, lo mismo que la clase \texttt{conectarFusiontables} por lo que se hayan documentadas sólo en este documento y en documentos relativos al proyecto SIPEsCA}.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+ArrayList<Instances> cargarDatos() throws ParseException {  
+    //Declaramos los atributos de las instancias
+    Attribute a0 = new Attribute("Intervalo", "yyyy-MM-dd HH:mm:ss");
+    Attribute a1 = new Attribute("Total");
+    ArrayList<Attribute> c = new ArrayList<>(); c.add(a0); c.add(a1);
+    //Creamos el conjunto de instancias
+    ArrayList<Instances> instances = new ArrayList<>(24);
+    for (int i = 0; i < 24; i++) {instances.add(new Instances(nodo, c, 1000));}
+
+    //Instanciamos conexion con FT
+    cFT = new conectarFusionTables();
+    Sqlresponse r = cFT.select(TABLAID, "Intervalo, Total,poligono", "idNodo = " + nodo + " AND Total>1 ", "ORDER BY \'Intervalo\' DESC LIMIT 10000");
+    primera_fecha = (String) r.getRows().get(0).get(0);
+    for (List<Object> a : r.getRows()) {
+        Instance i = new DenseInstance(2);
+        String s0 = (String) a.get(0);
+        if (!s0.equals(ultima_fecha)) {
+            String s1 = (String) a.get(1);
+            int hora = Integer.parseInt(s0.substring(11, 13));
+            i.setValue(instances.get(hora).attribute(0), instances.get(hora).attribute(0).parseDate(s0));
+            i.setValue(instances.get(hora).attribute(1), Integer.parseInt(s1));
+            instances.get(hora).add(i);
+        }
+        ultima_fecha = (String) a.get(0);
+    }
+    for (Instances a : instances) {a.sort(0);}
+    return instances;
+}
+\end{lstlisting}
+\caption[Código: Carga de datos en Weka desde memoria]{Código: Método que carga datos desde una petición a la base de Datos Fusion y los convierte en un formato soportado por las librerías de Weka}
+\end{figure}
+
+\subsection{Construcción del modelo de predicción}
+
+Cómo técnica de predicción empleada en este módulo usamos un método muy simple como es la regresión lineal. Dado a que estamos en un entorno online, es de vital importancia que el método sea muy rápido frente a la bondad de dicho método.
+
+Además, debido a que queremos hacer predicciones de intervalos de tiempo ``cortos'', empleamos un método de considerar la serie de forma distinta. En este ejemplo que presentamos aquí, queremos hacer predicciones cada hora. Debido a la estacionalidad de los datos, el hacer una serie temporal con todos los registros de un nodo concreto sería una serie demasiado grande, por lo que el cómputo asociado sería mayor. En lugar de formar una serie temporal con todos los registros del nodo, hacemos una serie temporal sólo con los registros de una hora determinada.
+
+Así, por ejemplo si queremos hacer una predicción del número de dispositivos esperables a ser detectados en un nodo en un intervalo concreto (por ejemplo, las de las 14 a 15 horas), formamos una serie temporal con todos los valores de dispositivos detectados por nuestro sensor en el dicho intervalo a lo largo del tiempo. De esta manera, podemos hacer uso de un histórico de datos sin hacer uso de todos los datos almacenados.
+
+Además se ha realizado así al considerar que puede influir más en la predicción del tráfico el estado del tráfico en ese mismo intervalo de tiempo a lo largo de varios días y semanas, que frente a los valores de todo el día de la última semana.
+
+Sin embargo, es necesario notar que este sistema se encuentra aún en una fase de desarrollo muy experimental, siendo la alternativa aquí mostrada, la que mejor al cierre de este documento.
+
+Se presenta por tanto el código asociado a la obtención del modelo de predicción:
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+public void run() {
+try {
+    ArrayList<Instances> pasos = cargarDatos();
+    //Instanciamos el predictor
+    ArrayList<WekaForecaster> forecaster = new ArrayList<>(24);
+    for (int a = 0; a < 24; a++) {forecaster.add(new WekaForecaster());}
+    int a = 0;
+    Date fecha = Debug.sdf.parse(primera_fecha);
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(fecha);
+    for (WekaForecaster fore : forecaster) {
+        cal.add(Calendar.HOUR, 1);
+        //Defimimos el atributo que queremos predecir
+        fore.setFieldsToForecast("Total");
+        //Definimos el método de predicción a emplear. En este caso, regresión lineal porque 
+        //en el artículo es el que mejor ha funcionado
+        fore.setBaseForecaster(new LinearRegression());
+        //Defimimos el atributo que "marca" el tiempo y su peridiocidad
+        fore.getTSLagMaker().setTimeStampField("Intervalo");
+        fore.getTSLagMaker().setMinLag(1);
+        fore.getTSLagMaker().setMaxLag(1);
+        fore.getTSLagMaker().setPeriodicity(TSLagMaker.Periodicity.WEEKLY);
+        fore.buildForecaster(pasos.get(a), System.out);
+        fore.primeForecaster(pasos.get(a));
+        List<List<NumericPrediction>> forecast = fore.forecast(1, System.out);
+
+        for (int i = 0; i < 1; i++) {
+            List<NumericPrediction> predsAtStep = forecast.get(i);
+            for (int j = 0; j < 1; j++) {
+                NumericPrediction predForTarget = predsAtStep.get(j);
+                List<String> valores = new ArrayList<>();
+                valores.add(Debug.sdf.format(cal.getTime()));valores.add(this.nodo);
+                valores.add("");valores.add(Double.toString(predForTarget.predicted()));
+                valores.add(poligono);
+                cFT.insert(TABLAID, campos, valores, true, 2);
+            }
+        }
+        a++;
+    }
+    cFT.forzarSync();
+    cFT.esperarSubida();
+    }
+\end{lstlisting}
+\caption[Código: Predicción mediante Weka]{Código: Método que realiza la predicción para el nodo solicitado de sus futuros valores}
+\end{figure}
+
+En dicho código, figura nuevamente una función asociada al módulo de publicación en la nube, en este caso, dicha función es la encargada de añadir (o actualizar) la predicción en nuestras nube con Google Fusion Tables.
+
+\subsection{Controlador del Módulo}
+
+En los apartados anteriores hemos mostrado las distintas partes que constituyen nuestro módulo de predicción: el submódulo encargado de la carga de datos desde Google Fusion Tables y el módulo encargado de realizar la predicción y publicación del resultado predicho.
+
+El controlador del módulo de predicción se basa en la ejecución de una tarea programada que realiza la ejecución en hebras de la predicción. Se puede observar su funcionamiento en el siguiente código.
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+public void run() {
+	this.temporizador = new TimerTask() {
+    
+    public void run() {
+        Logger.getGlobal().log(Level.INFO, "Comenzando sincronizado programado en la nube de la predicción.");
+        System.err.println("Comenzando sincronizado programado en la nube de la predicción.");                      
+        System.err.println("------->" + clientNo.static_getHowManyNodos());
+        
+        for (int i = 0; i < clientNo.static_getHowManyNodos(); i++) {
+            try {
+                hebras.add(new Prediccion(clientNo.static_getNodo(i)));
+                hebras.peek().start();
+                hebras.peek().join();
+                hebras.poll();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(ActualizadorPrediccion.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+   }
+};
+}
+\end{lstlisting}
+\caption[Código: Actualizador de Predicción I]{Código: Tarea temporizada de predicción del Actualizador de Predicción}
+\end{figure}
+
+Debido a estar una fase temprana y experimental, aún no se hace un uso exhaustivamente paralelo de las hebras, realizando el procesamiento secuencialmente. Este modo de funcionamiento es muy más sencillo de depurar, aunque el sistema está preparado para la realización de la tarea de predicción en paralelo para cuando sea necesario.
+
+En función de lo requerido por el fichero de configuración, el sistema realiza esta tarea programada a lo largo del tiempo, tal y como se muestra en el siguiente código.
+
+\begin{figure}[H]
+\begin{lstlisting}[basicstyle={\scriptsize\ttfamily},breaklines=true,language=Java,numbers=left,stepnumber=1,numberstyle={\scriptsize},tabsize=3]
+public void start(){     
+Timer timer = new Timer("ActualizadorPredicción", true);
+timer.scheduleAtFixedRate(temporizador, _c.getLong("ft.prediccion_tiempo_espera"),_c.getLong("ft.prediccion_periodo_actualizacion"));
+}
+\end{lstlisting}
+\caption[Código: Actualizador de Predicción II]{Código: Instanciación de la tarea temporizada de predicción del Actualizador de Predicción}
+\end{figure}
+
+\vfill
+\cleardoublepage

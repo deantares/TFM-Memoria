@@ -1,0 +1,68 @@
+\myChapter{Base de Datos Local: MySQL}\label{chap:servidor}
+\begin{flushright}{\slshape
+    Call me Ishmael.} \\ \medskip
+    --- {Herman Melville, Moby-Dick; or, The Whale}
+\end{flushright}
+\minitoc\mtcskip
+\vfill
+
+\clearpage
+
+Cómo se ha comentado anteriormente, para almacenar la base de datos local se emplea una instalación de MySQL donde se ha quidado con mimo la configuración del entorno para hacer que el gestor de base de datos se comporte de la manera más eficiente posible en el entorno que nos encontramos.
+
+En este capítulo mostraremos las optimizaciones y configuraciones que se han realizado en el gestor de base de datos, así como la estructura y procedimientos empleados para el procesamiento de los datos.
+
+\section{Esquema de base de datos}
+
+En esta sección mostraremos el esquema de base de datos empleado en cada tabla. 
+
+\subsection{Nodo}
+
+Esta tabla es la encargada de almacenar la información de los nodos del sistema. Consta de los siguientes campos:
+
+\begin{SCfigure}[20][tb]
+\centering
+\includegraphics[width=10pc]{img/almacenamiento/estructura_nodos.png}
+\caption{Esquema de la base de datos local: Nodos}
+\end{SCfigure}
+
+\begin{description}
+\item [{\texttt{{idNodo}}}] Constante que indica el radio de la tierra en metros (empleado para las operaciones de conversión entre coordenadas geográficas)
+\end{description}
+
+
+\subsection{Dispositivos}
+
+\subsubsection{Dispositivo\_mayorClass}
+
+\subsubsection{Dispositivo\_minorClass}
+
+\subsection{Pasos}
+
+
+
+\section{Optimizaciones en la base de datos}
+
+\subsection{Optimizado de consultas temporales} 
+
+\subsection{Optimización de índices de identificador}
+
+\subsection{Particionado de datos}
+
+\begin{tikzpicture}
+\node[circle,draw](z){$30$}
+  child[missing]{}
+  child{
+    node[circle,draw]{40} child{node[circle,draw] {20}} child[missing] };
+\end{tikzpicture}
+
+
+\subsection{Reducción del tamaño de las bases de datos}
+
+\section{Procedimientos de procesamiento}
+
+Hola mundo
+
+\vfill
+\cleardoublepage
+

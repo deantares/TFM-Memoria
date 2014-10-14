@@ -1,0 +1,14 @@
+# Fdb version 3
+["pdflatex"] 1409509771 "apifusiontables.tex" "apifusiontables.pdf" "apifusiontables" 1409509771
+  "/etc/texmf/web2c/texmf.cnf" 1403132755 475 c0e671620eb5563b2130f56340a5fde8 ""
+  "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1272929888 3287 e6b82fe08f5336d4d5ebc73fb1152e87 ""
+  "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmss10.tfm" 1136768653 1316 b636689f1933f24d1294acdf6041daaa ""
+  "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1392645748 31083 1dfd8bf685ce0009c40532fedf8a7c53 ""
+  "/usr/share/texmf/web2c/texmf.cnf" 1392645748 31083 1dfd8bf685ce0009c40532fedf8a7c53 ""
+  "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1408331739 1042924 522cc3059088555b5e489635d162203b ""
+  "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1408331742 863273 fafd9084317c221928438fcff8f2d0a0 ""
+  "apifusiontables.aux" 1409509703 2317 92665a7cf7d88ce38b4a9c56f67fbf1d ""
+  "apifusiontables.tex" 1409509771 1412 ccf558e53e1a599c3b6200d6a7d8e493 ""
+  (generated)
+  "apifusiontables.pdf"
+  "apifusiontables.log"

@@ -1,0 +1,36 @@
+\myChapter{Resultados}\label{chap:resultados}
+%\begin{flushright}{\slshape
+%    Call me Ishmael.} \\ \medskip
+%    --- {Herman Melville, Moby-Dick; or, The Whale}
+%\end{flushright}
+\minitoc\mtcskip
+\vfill
+\clearpage
+
+En este capítulo presentaremos los resultados obtenidos en el desarrollo del proyecto:
+
+\section{Mes 1 al mes 4} 
+
+Dado que la web es hoy en día un medio de comunicación dominante, desde el mismo comienzo del desarrollo del proyecto, se utilizó como principal interfaz entre los miembros del proyecto. Así, se han usado diferentes herramientas online para la edición colaborativa de documentos, discusiones, listas de correo y áreas de ficheros compartidas. Se ha reducido de esta forma el número de reuniones presenciales y así los costes, a la vez que se ha mejorado la productividad. En este sentido, se ha minimizado el número de reuniones presenciales, realizando éstas mediante vídeoconferencia (skype o google-talk), y sólo se han celebrado reuniones de trabajo por parte de dos o tres personas que estén encargadas de una tarea.
+
+Al inicio del proyecto se asignaron tareas a los diferentes investigadores (tarea del paquete P01), y comenzó la colaboración con la empresa Ciudad2020 en el ámbito de este proyecto.
+
+Esta colaboración ha sido fundamental para el desarrollo del hardware de captación de datos. En cualquier caso, y mientras que comenzó la construcción de los Intelify, se desarrolló una aplicación Android para comenzar la recogida de datos (ver sección 4.1, en la página 17). De esta forma, contamos con una base de datos inicial con la que comenzar los trabajos de otras tareas.
+
+El principal dato recogido es la MAC Bluetooth (BT) de los dispositivos que pasan. Este dato no solo es un identificador único, sino que permite saber el fabricante e incluso distinguir de qué tipo de dispositivo se trata (PC, teléfono móvil, equipo manos libres, etc).
+
+Como punto de partida se creó una base de datos (tarea relacionada con los paquetes P04 y P05) cuya estructura se basa en tres tablas denominadas nodo, dispositivo y paso. Ésta fue implementada en MySQL. La tabla nodo es la encargada de almacenar la información de cada una de las antenas (IdNodo, Latitud, Longitud, Nombre). La tabla dispositivo contiene la información de cada uno de los dispositivos que alguna de las antenas capta (idDisposivo, capacidades del dispositivo, Fabricante). La tabla paso almacena la información de qué dispositivo es captado por cada nodo, haciendo de vínculo entre la información de las dos tablas anteriores (idNodo, idDispositivo, momento en que se dejó de detectar el dispositivo en el nodo, momento en que se comenzó a detectar el dispositivo en el nodo).
+
+Con esta estructura de base de datos se han hecho consultas para extraer información, como por ejemplo cuántos dispositivos pasaron por un punto en cierto momento (o rango de horas), por qué puntos pasó un dispositivo (recrear el camino seguido), o consultar cuántos pasan al día por cierto punto.
+
+Adicionalmente, y para probar los algoritmos de tratamiento de datos con grandes cantidades de casos, comenzó la colaboración con Ciudad2020 obteniendo varios miles de pasos de dispositivos BT ante los dispositivos captadores que tienen instalados en la ciudad de Córdoba.
+
+En este sentido, se recopilaron diversos algoritmos de clustering, clasificación y predicción (tarea del paquete P05) (p.ej. SOM, MLP, SVM, C4.5) que el equipo tiene disponible de sus trabajos de investigación en los últimos años. 
+
+Además, se analizaron las cadenas identificadoras de los BT para buscar apariciones de un dispositivo en diferentes nodos (movimientos o desplazamientos), determinar la frecuencia de aparición, calcular velocidades de movimiento entre nodos, calcular el número de dispositivos que pasan por cierto sitio cada día (ya sea festivo o laborable), etc.
+
+Por último, se habilitó una máquina como servidor para ofrecer la información (tarea de los paquetes P04 y P07) a través de los servicios web a desarrollar: http://evorq.ugr.es:8080/sipesca/
+En esta máquina se desplegó todo el software necesario para la implementación y despliegue de los servicios web. Además, en todo momento se ha aprovechado el trabajo iniciado hace meses en un framework de desarrollo de servicios web en Java
+
+\vfill
+\cleardoublepage
